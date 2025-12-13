@@ -37,14 +37,15 @@ class AuthController extends Controller
         }
 
         // Assuming you're using Passport for API authentication
-        // $token = $user->createToken('YourAppName')->accessToken;
+        // Generate the token
+        $token = $user->createToken('YourAppName')->accessToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
             'data'    => [
                 'user'  => $user,
-                // 'token' => $token,
+                'token' => $token,  // Include the token in the response
             ],
         ], 200);
     }
