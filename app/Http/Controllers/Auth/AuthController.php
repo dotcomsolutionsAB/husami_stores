@@ -14,40 +14,53 @@ class AuthController extends Controller
     // login
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email'    => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
+        try {
+            $request->validate([
+                'username' => 'required|string',
+                'password' => 'required|string',
+            ]);
 
-        if ($validator->fails()) {
+            // Attempt login using the username column
+            if (! Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
+                return response()->json([
+                    'code'    => 401,
+                    'success' => false,
+                    'message' => 'Invalid Username or Password.',
+                ], 401);
+            }
+
+            $user  = Auth::user();
+            $token = $user->createToken('API TOKEN')->plainTextToken; // requires Sanctum
+
             return response()->json([
-                'success' => false,
-                'message' => 'Validation failed.',
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
+                'code'    => 200,
+                'success' => true,
+                'message' => 'User logged in successfully!',
+                'data' => [
+                    'role'        => $user->role,
+                    'token'       => $token,
+                    'user_id'     => $user->id,
+                    'name'        => $user->name,
+                    'username'    => $user->username,
+                    'email'       => $user->email,
+                    'order_views' => $user->order_views,
+                    'change_status'=> $user->change_status,
+                ],
+            ], 200);
 
-        $user = User::where('email', $request->email)->first();
+        } catch (\Throwable $e) {
+            \Log::error('Login failed', [
+                'user'  => $request->input('username'),
+                'error' => $e->getMessage(),
+            ]);
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
+                'code'    => 500,
                 'success' => false,
-                'message' => 'Invalid credentials.',
-            ], 401);
+                'message' => 'Something went wrong.',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        // Assuming you're using Passport for API authentication
-        // Generate the token
-        $token = $user->createToken('YourAppName')->accessToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful.',
-            'data'    => [
-                'user'  => $user,
-                'token' => $token,  // Include the token in the response
-            ],
-        ], 200);
     }
 
     // logout
