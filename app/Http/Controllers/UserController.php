@@ -9,7 +9,7 @@ class UserController extends Controller
 {
     //
     // Register API
-    public function register(Request $request)
+    public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name'     => 'required|string|max:255',
