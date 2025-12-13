@@ -16,12 +16,12 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'username' => 'required|string',
+                'email'    => 'required|email',
                 'password' => 'required|string',
             ]);
 
             // Attempt login using the username column
-            if (! Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
+            if (! Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
                 return response()->json([
                     'code'    => 401,
                     'success' => false,
@@ -43,8 +43,6 @@ class AuthController extends Controller
                     'name'        => $user->name,
                     'username'    => $user->username,
                     'email'       => $user->email,
-                    'order_views' => $user->order_views,
-                    'change_status'=> $user->change_status,
                 ],
             ], 200);
 
