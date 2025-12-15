@@ -1,7 +1,4 @@
-
-$middleware->alias([
-            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
-        ]);<?php
+<?php
 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
