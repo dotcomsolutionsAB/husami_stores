@@ -16,12 +16,12 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email'    => 'required|email',
+                'username'    => 'required|string|exists:users,username',
                 'password' => 'required|string',
             ]);
 
             // Attempt login using the username column
-            if (! Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            if (! Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
                 return response()->json([
                     'code'    => 401,
                     'success' => false,

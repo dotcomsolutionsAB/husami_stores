@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/retrieve/{id?}', [UserController::class, 'fetch']);
         Route::post('/update/{id}', [UserController::class, 'edit']);
         Route::delete('/delete/{id}', [UserController::class, 'delete']);
-        Route::post('/reset_password', [AuthController::class, 'updatePassword']);
+        // Route::post('/reset_password', [AuthController::class, 'updatePassword']);
         Route::post('/export', [UserController::class, 'exportExcel']);
         Route::post('/change_password', [UserController::class, 'updatePassword']);
     });
