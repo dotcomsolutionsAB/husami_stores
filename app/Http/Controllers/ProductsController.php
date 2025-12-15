@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class ProductsController extends Controller
 {
-    //
+    // create
     public function create(Request $request)
     {
         try {
@@ -56,4 +56,69 @@ class ProductsController extends Controller
             ], 500);
         }
     }
+
+    public function fetch(Request $request, $id = null)
+    {
+        try {
+            // 🔹 SINGLE PRODUCT
+            if ($id !== null) {
+                $product = ProductModel::find($id);
+
+                if (! $product) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Product not found.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => true,
+                    'data' => $product,
+                ], 200);
+            }
+
+            // 🔹 LIST PRODUCTS
+            $limit  = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+            $search = trim((string) $request->input('search', ''));
+
+            $item  = $request->input('item');
+            $brand = $request->input('brand');
+
+            $total = ProductModel::count();
+
+            $q = ProductModel::orderBy('id','desc');
+
+            if ($search !== '') {
+                $q->where(function ($w) use ($search) {
+                    $w->where('grade_no', 'like', "%{$search}%")
+                    ->orWhere('size', 'like', "%{$search}%");
+                });
+            }
+
+            if (!empty($item)) {
+                $q->where('item_name', 'like', "%{$item}%");
+            }
+
+            if (!empty($brand)) {
+                $q->where('brand', (int)$brand);
+            }
+
+            $items = $q->skip($offset)->take($limit)->get();
+
+            return response()->json([
+                'code' => 200,
+                'status' => true,
+                'total' => $total,
+                'count' => $items->count(),
+                'data' => $items,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Product fetch failed', ['error'=>$e->getMessage()]);
+            return response()->json(['message'=>'Failed to fetch products'], 500);
+        }
+    }
+
 }

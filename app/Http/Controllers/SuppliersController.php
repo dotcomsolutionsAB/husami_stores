@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class SuppliersController extends Controller
 {
-    //
+    // create
     public function create(Request $request)
     {
         try {
@@ -75,4 +75,56 @@ class SuppliersController extends Controller
             ], 500);
         }
     }
+
+    // fetch
+    public function fetch(Request $request, $id = null)
+    {
+        try {
+            // 🔹 SINGLE SUPPLIER
+            if ($id !== null) {
+                $supplier = SupplierModel::find($id);
+
+                if (! $supplier) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Supplier not found.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => true,
+                    'data' => $supplier,
+                ], 200);
+            }
+
+            // 🔹 LIST SUPPLIERS
+            $limit  = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+            $search = trim((string) $request->input('search', ''));
+
+            $total = SupplierModel::count();
+
+            $q = SupplierModel::orderBy('id','desc');
+
+            if ($search !== '') {
+                $q->where('name', 'like', "%{$search}%");
+            }
+
+            $items = $q->skip($offset)->take($limit)->get();
+
+            return response()->json([
+                'code' => 200,
+                'status' => true,
+                'total' => $total,
+                'count' => $items->count(),
+                'data' => $items,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Supplier fetch failed', ['error'=>$e->getMessage()]);
+            return response()->json(['message'=>'Failed to fetch suppliers'], 500);
+        }
+    }
+
 }

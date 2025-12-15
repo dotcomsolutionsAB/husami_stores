@@ -43,6 +43,62 @@ class UserController extends Controller
         ], 201);
     }
 
+    // fetch
+    public function fetch(Request $request, $id = null)
+    {
+        try {
+            // 🔹 SINGLE USER BY ID
+            if ($id !== null) {
+                $user = User::select('id','name','email','username','role','created_at')
+                    ->find($id);
+
+                if (! $user) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'User not found.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => true,
+                    'data' => $user,
+                ], 200);
+            }
+
+            // 🔹 LIST USERS
+            $limit  = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+            $search = trim((string) $request->input('search', ''));
+
+            $total = User::count();
+
+            $q = User::select('id','name','email','username','role','created_at')
+                ->orderBy('id','desc');
+
+            if ($search !== '') {
+                $q->where(function ($w) use ($search) {
+                    $w->where('name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%");
+                });
+            }
+
+            $items = $q->skip($offset)->take($limit)->get();
+
+            return response()->json([
+                'code' => 200,
+                'status' => true,
+                'total' => $total,
+                'count' => $items->count(),
+                'data' => $items,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('User fetch failed', ['error'=>$e->getMessage()]);
+            return response()->json(['message'=>'Failed to fetch users'], 500);
+        }
+    }
+
     // update password
     public function updatePassword(Request $request)
     {

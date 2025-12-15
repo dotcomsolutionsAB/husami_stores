@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class BrandController extends Controller
 {
-    //
+    // create
     public function create(Request $request)
     {
         try {
@@ -53,6 +53,79 @@ class BrandController extends Controller
                 'status'  => false,
                 'message' => 'Something went wrong while creating brand.',
             ], 500);
+        }
+    }
+
+    public function fetch(Request $request, $id = null)
+    {
+        try {
+            // 🔹 SINGLE BRAND
+            if ($id !== null) {
+                $brand = BrandModel::with('logoRef:id,file_url')
+                    ->find($id);
+
+                if (! $brand) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Brand not found.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => true,
+                    'data' => [
+                        'id' => $brand->id,
+                        'name' => $brand->name,
+                        'order_by' => $brand->order_by,
+                        'hex_code' => $brand->hex_code,
+                        'logo' => $brand->logoRef
+                            ? ['id'=>$brand->logoRef->id,'url'=>$brand->logoRef->file_url]
+                            : null,
+                    ],
+                ], 200);
+            }
+
+            // 🔹 LIST BRANDS
+            $limit  = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+            $search = trim((string) $request->input('search', ''));
+
+            $total = BrandModel::count();
+
+            $q = BrandModel::with('logoRef:id,file_url')
+                ->orderBy('order_by','asc')
+                ->orderBy('id','desc');
+
+            if ($search !== '') {
+                $q->where('name', 'like', "%{$search}%");
+            }
+
+            $items = $q->skip($offset)->take($limit)->get();
+
+            $data = $items->map(function ($b) {
+                return [
+                    'id' => $b->id,
+                    'name' => $b->name,
+                    'order_by' => $b->order_by,
+                    'hex_code' => $b->hex_code,
+                    'logo' => $b->logoRef
+                        ? ['id'=>$b->logoRef->id,'url'=>$b->logoRef->file_url]
+                        : null,
+                ];
+            });
+
+            return response()->json([
+                'code' => 200,
+                'status' => true,
+                'total' => $total,
+                'count' => $data->count(),
+                'data' => $data,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Brand fetch failed', ['error'=>$e->getMessage()]);
+            return response()->json(['message'=>'Failed to fetch brands'], 500);
         }
     }
 }

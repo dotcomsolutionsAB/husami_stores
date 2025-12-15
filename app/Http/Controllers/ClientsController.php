@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class ClientsController extends Controller
 {
-    //
+    // create
     public function create(Request $request)
     {
         try {
@@ -86,4 +86,56 @@ class ClientsController extends Controller
             ], 500);
         }
     }
+
+    // fetch
+    public function fetch(Request $request, $id = null)
+    {
+        try {
+            // 🔹 SINGLE CLIENT
+            if ($id !== null) {
+                $client = ClientModel::find($id);
+
+                if (! $client) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Client not found.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => true,
+                    'data' => $client,
+                ], 200);
+            }
+
+            // 🔹 LIST CLIENTS
+            $limit  = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+            $search = trim((string) $request->input('search', ''));
+
+            $total = ClientModel::count();
+
+            $q = ClientModel::orderBy('id','desc');
+
+            if ($search !== '') {
+                $q->where('name', 'like', "%{$search}%");
+            }
+
+            $items = $q->skip($offset)->take($limit)->get();
+
+            return response()->json([
+                'code' => 200,
+                'status' => true,
+                'total' => $total,
+                'count' => $items->count(),
+                'data' => $items,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Client fetch failed', ['error'=>$e->getMessage()]);
+            return response()->json(['message'=>'Failed to fetch clients'], 500);
+        }
+    }
+
 }
