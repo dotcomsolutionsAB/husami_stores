@@ -61,7 +61,7 @@ class BrandController extends Controller
         try {
             // 🔹 SINGLE BRAND
             if ($id !== null) {
-                $brand = BrandModel::with('logoRef:id,file_url')
+                $brand = BrandModel::with('logoRef:id,file_path')
                     ->find($id);
 
                 if (! $brand) {
@@ -80,7 +80,7 @@ class BrandController extends Controller
                         'order_by' => $brand->order_by,
                         'hex_code' => $brand->hex_code,
                         'logo' => $brand->logoRef
-                            ? ['id'=>$brand->logoRef->id,'url'=>$brand->logoRef->file_url]
+                            ? ['id'=>$brand->logoRef->id,'url'=>$brand->logoRef->file_path]
                             : null,
                     ],
                 ], 200);
@@ -93,7 +93,7 @@ class BrandController extends Controller
 
             $total = BrandModel::count();
 
-            $q = BrandModel::with('logoRef:id,file_url')
+            $q = BrandModel::with('logoRef:id,file_path')
                 ->orderBy('order_by','asc')
                 ->orderBy('id','desc');
 
@@ -110,7 +110,7 @@ class BrandController extends Controller
                     'order_by' => $b->order_by,
                     'hex_code' => $b->hex_code,
                     'logo' => $b->logoRef
-                        ? ['id'=>$b->logoRef->id,'url'=>$b->logoRef->file_url]
+                        ? ['id'=>$b->logoRef->id,'url'=>$b->logoRef->file_path]
                         : null,
                 ];
             });
