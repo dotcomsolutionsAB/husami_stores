@@ -156,7 +156,7 @@ class UserController extends Controller
     }
 
     // update
-    public function update(Request $request, $id)
+    public function edit(Request $request, $id)
     {
         $user = User::find($id);
 
@@ -210,6 +210,7 @@ class UserController extends Controller
         ], 200);
     }
 
+    // delete
     public function delete($id)
     {
         $user = User::find($id);
