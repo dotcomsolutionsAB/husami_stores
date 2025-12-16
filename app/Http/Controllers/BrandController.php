@@ -16,15 +16,36 @@ class BrandController extends Controller
                 'name'     => ['required', 'string', 'max:255'],
                 'order_by' => ['nullable', 'integer', 'min:0'],
                 'hex_code' => ['nullable', 'string', 'max:9'],
-                'logo'     => ['nullable', 'integer'], // FK to uploads table (if exists)
+                'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'], // 5MB
             ]);
+
+            $logoUploadId = null;
+
+            if ($request->hasFile('logo')) {
+                $file = $request->file('logo');
+
+                // store file (choose your disk & folder)
+                $path = $file->store('brands/logos', 'public'); // storage/app/public/brands/logos/...
+
+                // create uploads row (use your Upload model/table name)
+                $upload = UploadModel::create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_url'  => asset('storage/' . $path),   // or your resolveUploadUrl logic
+                    'mime_type' => $file->getMimeType(),
+                    'size'      => $file->getSize(),
+                    // add more columns if your uploads table needs them
+                ]);
+
+                $logoUploadId = $upload->id;
+            }
 
             // 2️⃣ Create brand
             $brand = BrandModel::create([
                 'name'     => $request->name,
                 'order_by' => $request->order_by ?? 0,
                 'hex_code' => $request->hex_code,
-                'logo'     => $request->logo,
+                'logo'     => $logoUploadId,
             ]);
 
             return response()->json([
