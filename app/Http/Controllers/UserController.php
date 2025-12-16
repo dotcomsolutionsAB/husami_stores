@@ -22,7 +22,8 @@ class UserController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
+                'code' => 200,
+                'success' => 'error',
                 'message' => 'Validation failed.',
                 'errors'  => $validator->errors(),
             ], 422);
@@ -37,10 +38,11 @@ class UserController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
+            'code' => 200,
+            'status' => 'success',
             'message' => 'User registered successfully.',
             'data'    => $user,
-        ], 201);
+        ], 200);
     }
 
     // fetch
@@ -151,5 +153,83 @@ class UserController extends Controller
                 'message' => 'Something went wrong while updating password.',
             ], 500);
         }
+    }
+
+    // update
+    public function update(Request $request, $id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'code' => 200,
+                'success' => false,
+                'message' => 'User not found.',
+                'data' => [],
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'role'     => 'required|in:admin,user,sub-admin',
+
+            // optional password update
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code' => 200,
+                'success' => 'error',
+                'message' => 'Validation failed.',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $updateData = [
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'username' => $request->username,
+            'role'     => $request->role,
+        ];
+
+        // Update password only if provided
+        if (!empty($request->password)) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updateData);
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'User updated successfully.',
+            'data' => $user->fresh(),
+        ], 200);
+    }
+
+    public function delete($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'code' => 200,
+                'success' => false,
+                'message' => 'User not found.',
+                'data' => [],
+            ], 404);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'User deleted successfully.',
+            'data' => [],
+        ], 200);
     }
 }
