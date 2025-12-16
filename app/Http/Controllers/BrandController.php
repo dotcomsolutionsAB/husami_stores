@@ -104,9 +104,12 @@ class BrandController extends Controller
                         'order_by' => $brand->order_by,
                         'hex_code' => $brand->hex_code,
                         'logo' => $brand->logoRef
-                            ? ['id'=>$brand->logoRef->id,'url'=>$brand->logoRef->file_path]
+                            ? [
+                                'id'  => $brand->logoRef->id,
+                                'url' => asset('storage/' . ltrim($brand->logoRef->file_path, '/')),
+                            ]
                             : null,
-                    ],
+                        ],
                 ], 200);
             }
 
@@ -128,16 +131,17 @@ class BrandController extends Controller
             $items = $q->skip($offset)->take($limit)->get();
 
             $data = $items->map(function ($b) {
+
+            $logoUrl = $b->logoRef
+                ? asset('storage/' . ltrim($b->logoRef->file_path, '/'))
+                : null;
                 return [
                     'id' => $b->id,
                     'name' => $b->name,
                     'order_by' => $b->order_by,
                     'hex_code' => $b->hex_code,
-                    'logo' => $brand->logoRef
-                        ? [
-                            'id'  => $brand->logoRef->id,
-                            'url' => asset('storage/' . ltrim($brand->logoRef->file_path, '/')),
-                        ]
+                    'logo'     => $b->logoRef
+                        ? ['id' => $b->logoRef->id, 'url' => $logoUrl]
                         : null,
                 ];
             });
