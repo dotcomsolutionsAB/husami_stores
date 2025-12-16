@@ -25,17 +25,19 @@ class BrandController extends Controller
             if ($request->hasFile('logo')) {
                 $file = $request->file('logo');
 
-                // store file (choose your disk & folder)
-                $path = $file->store('brands/logos', 'public'); // storage/app/public/brands/logos/...
+                $path = $file->store('brands/logos', 'public');
 
-                // create uploads row (use your Upload model/table name)
+                // Get extension safely (lowercase)
+                $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: '');
+
+                // Size in bytes
+                $size = (int) $file->getSize();
+
                 $upload = UploadModel::create([
                     'file_name' => $file->getClientOriginalName(),
                     'file_path' => $path,
-                    'file_url'  => asset('storage/' . $path),   // or your resolveUploadUrl logic
-                    'mime_type' => $file->getMimeType(),
-                    'size'      => $file->getSize(),
-                    // add more columns if your uploads table needs them
+                    'file_ext'  => $ext,   
+                    'file_size' => $size, 
                 ]);
 
                 $logoUploadId = $upload->id;
