@@ -57,6 +57,7 @@ class ProductsController extends Controller
         }
     }
 
+    // fetch
     public function fetch(Request $request, $id = null)
     {
         try {
@@ -121,4 +122,107 @@ class ProductsController extends Controller
         }
     }
 
+    // edit
+    public function edit(Request $request, $id)
+    {
+        try {
+            // 0️⃣ Find product
+            $product = ProductModel::find($id);
+
+            if (!$product) {
+                return response()->json([
+                    'code'    => 404,
+                    'status'  => false,
+                    'message' => 'Product not found.',
+                ], 404);
+            }
+
+            // 1️⃣ Validation
+            $request->validate([
+                'grade_no'        => ['nullable', 'string', 'max:255'],
+                'item_name'       => ['required', 'string', 'max:255'],
+                'size'            => ['nullable', 'string', 'max:255'],
+
+                // FK fields
+                'brand'           => ['nullable', 'integer', 'exists:t_brand,id'],
+                'units'           => ['nullable', 'integer'],
+
+                'list_price'      => ['required', 'numeric', 'min:0'],
+                'hsn'             => ['nullable', 'string', 'max:32'],
+                'tax'             => ['required', 'numeric', 'min:0', 'max:100'],
+                'low_stock_level' => ['nullable', 'integer', 'min:0'],
+            ]);
+
+            // 2️⃣ Update product
+            $product->update($request->only([
+                'grade_no','item_name','size','brand','units',
+                'list_price','hsn','tax','low_stock_level'
+            ]));
+
+            return response()->json([
+                'code'    => 200,
+                'status'  => true,
+                'message' => 'Product updated successfully.',
+                'data'    => $product->fresh(),
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'code'   => 422,
+                'status' => false,
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Throwable $e) {
+            Log::error('Product update failed', [
+                'product_id' => $id,
+                'error'      => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'code'    => 500,
+                'status'  => false,
+                'message' => 'Something went wrong while updating product.',
+            ], 500);
+        }
+    }
+
+    // delete
+    public function delete($id)
+    {
+        try {
+            // 0️⃣ Find product
+            $product = ProductModel::find($id);
+
+            if (!$product) {
+                return response()->json([
+                    'code'    => 404,
+                    'status'  => false,
+                    'message' => 'Product not found.',
+                ], 404);
+            }
+
+            // 1️⃣ Delete product
+            $product->delete();
+
+            return response()->json([
+                'code'    => 200,
+                'status'  => true,
+                'message' => 'Product deleted successfully.',
+                'data'    => [],
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Product delete failed', [
+                'product_id' => $id,
+                'error'      => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'code'    => 500,
+                'status'  => false,
+                'message' => 'Something went wrong while deleting product.',
+            ], 500);
+        }
+    }
 }
