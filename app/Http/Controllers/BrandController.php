@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\BrandModel;
+use App\Models\UploadModel;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
