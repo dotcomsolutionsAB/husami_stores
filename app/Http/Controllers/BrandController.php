@@ -133,8 +133,11 @@ class BrandController extends Controller
                     'name' => $b->name,
                     'order_by' => $b->order_by,
                     'hex_code' => $b->hex_code,
-                    'logo' => $b->logoRef
-                        ? ['id'=>$b->logoRef->id,'url'=>$b->logoRef->file_path]
+                    'logo' => $brand->logoRef
+                        ? [
+                            'id'  => $brand->logoRef->id,
+                            'url' => asset('storage/' . ltrim($brand->logoRef->file_path, '/')),
+                        ]
                         : null,
                 ];
             });
