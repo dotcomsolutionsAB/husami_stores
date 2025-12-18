@@ -153,7 +153,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [ClientsController::class, 'create']);
         Route::post('/retrieve/{id?}', [ClientsController::class, 'fetch']);
         Route::post('/update/{id}', [ClientsController::class, 'edit']);
-        Route::delete('/delete/{id}', [ClientsController::class, 'delete']);
+        Route::get('/delete/{id}', [ClientsController::class, 'delete']);
         Route::post('/export', [ClientsController::class, 'exportExcel']);
     });
 
