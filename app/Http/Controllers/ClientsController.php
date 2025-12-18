@@ -290,7 +290,7 @@ class ClientsController extends Controller
 
             // 🔹 Create CSV File
             $fileName = 'clients_' . now()->format('YmdHis') . '.csv';
-            $filePath = storage_path('app/public/exports/' . $fileName);
+            $filePath = storage_path('app/public/exports/clients/' . $fileName);
 
             // Open the file for writing
             $file = fopen($filePath, 'w');
@@ -321,7 +321,7 @@ class ClientsController extends Controller
             fclose($file);
 
             // 🔹 Return link to the generated CSV file
-            $fileUrl = asset('storage/exports/' . $fileName);
+            $fileUrl = asset('storage/exports/clients/' . $fileName);
 
             return response()->json([
                 'status' => true,
