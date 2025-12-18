@@ -138,4 +138,127 @@ class ClientsController extends Controller
         }
     }
 
+    // Update (Edit) a Client
+    public function edit(Request $request, $id)
+    {
+        try {
+            // 1️⃣ Validation
+            $request->validate([
+                'name'            => ['required', 'string', 'max:255'],
+                'address_line_1'  => ['nullable', 'string', 'max:255'],
+                'address_line_2'  => ['nullable', 'string', 'max:255'],
+                'city'            => ['nullable', 'string', 'max:255'],
+                'pincode'         => ['nullable', 'integer', 'digits_between:4,8'],
+                'gstin'           => ['nullable', 'string', 'max:20'],
+                'state'           => ['nullable', 'integer', 'exists:t_state,id'],
+                'country'         => ['nullable', 'string', 'max:64'],
+                'mobile'          => ['nullable', 'string', 'max:32'],
+                'email'           => ['nullable', 'email', 'max:255'],
+            ]);
+
+            // 2️⃣ Check if client exists
+            $client = ClientModel::find($id);
+            if (!$client) {
+                return response()->json([
+                    'code'    => 404,
+                    'status'  => false,
+                    'message' => 'Client not found!',
+                ], 404);
+            }
+
+            // 3️⃣ Check for composite uniqueness (name + mobile + gstin)
+            $exists = ClientModel::where('name', $request->name)
+                ->where('mobile', $request->mobile)
+                ->where('gstin', $request->gstin)
+                ->where('id', '!=', $id)  // Exclude current client from the uniqueness check
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'code'    => 409,
+                    'status'  => false,
+                    'message' => 'Client with same Name, Mobile and GSTIN already exists.',
+                ], 409);
+            }
+
+            // 4️⃣ Update the client data
+            $client->update($request->only([
+                'name',
+                'address_line_1',
+                'address_line_2',
+                'city',
+                'pincode',
+                'gstin',
+                'state',
+                'country',
+                'mobile',
+                'email',
+            ]));
+
+            return response()->json([
+                'code'    => 200,
+                'status'  => true,
+                'message' => 'Client updated successfully!',
+                'data'    => $client,
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'code'   => 422,
+                'status' => false,
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Throwable $e) {
+            Log::error('Client update failed', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'code'    => 500,
+                'status'  => false,
+                'message' => 'Something went wrong while updating client.',
+            ], 500);
+        }
+    }
+
+    // Delete a Client
+    public function delete($id)
+    {
+        try {
+            // 1️⃣ Check if client exists
+            $client = ClientModel::find($id);
+            if (!$client) {
+                return response()->json([
+                    'code'    => 404,
+                    'status'  => false,
+                    'message' => 'Client not found!',
+                ], 404);
+            }
+
+            // 2️⃣ Delete the client
+            $client->delete();
+
+            return response()->json([
+                'code'    => 200,
+                'status'  => true,
+                'message' => 'Client deleted successfully!',
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Client deletion failed', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'code'    => 500,
+                'status'  => false,
+                'message' => 'Something went wrong while deleting client.',
+            ], 500);
+        }
+    }
 }
