@@ -261,4 +261,79 @@ class ClientsController extends Controller
             ], 500);
         }
     }
+
+    // Export
+    public function exportExcel(Request $request)
+    {
+        try {
+            // 🔹 Filter Logic (same as fetch)
+            $limit  = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+            $search = trim((string) $request->input('search', ''));
+
+            $q = ClientModel::orderBy('id', 'desc');
+
+            if ($search !== '') {
+                $q->where('name', 'like', "%{$search}%");
+            }
+
+            // 🔹 Fetch filtered data (no pagination)
+            $clients = $q->get(); // Fetch all filtered clients without pagination
+
+            if ($clients->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No clients found.',
+                ], 404);
+            }
+
+            // 🔹 Create CSV File
+            $fileName = 'clients_' . now()->format('YmdHis') . '.csv';
+            $filePath = storage_path('app/public/exports/' . $fileName);
+
+            // Open the file for writing
+            $file = fopen($filePath, 'w');
+
+            // Add headers to the CSV file
+            fputcsv($file, ['ID', 'Name', 'Address Line 1', 'Address Line 2', 'City', 'Pincode', 'GSTIN', 'State', 'Country', 'Mobile', 'Email', 'Created At', 'Updated At']);
+
+            // Write each client to the CSV
+            foreach ($clients as $client) {
+                fputcsv($file, [
+                    $client->id,
+                    $client->name,
+                    $client->address_line_1,
+                    $client->address_line_2,
+                    $client->city,
+                    $client->pincode,
+                    $client->gstin,
+                    $client->state,
+                    $client->country,
+                    $client->mobile,
+                    $client->email,
+                    $client->created_at,
+                    $client->updated_at,
+                ]);
+            }
+
+            // Close the file after writing
+            fclose($file);
+
+            // 🔹 Return link to the generated CSV file
+            $fileUrl = asset('storage/exports/' . $fileName);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'CSV exported successfully!',
+                'file_url' => $fileUrl,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('Client export failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to export clients.',
+            ], 500);
+        }
+    }
 }
