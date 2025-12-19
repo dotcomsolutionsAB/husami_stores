@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Traits\ApiResponse;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -9,71 +10,58 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
     //
+    use ApiResponse;
     // Register API
     public function create(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-            'username' => 'required|string|max:255|unique:users,username',
-            'role'     => 'required|in:admin,user,sub-admin', // Enum values
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'name'     => 'required|string|max:255',
+                'email'    => 'nullable|email|unique:users,email',
+                'password' => 'required|string|min:6|confirmed',
+                'username' => 'required|string|max:255|unique:users,username',
+                'role'     => 'required|in:admin,user',
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'code' => 200,
-                'success' => 'error',
-                'message' => 'Validation failed.',
-                'errors'  => $validator->errors(),
-            ], 422);
+            if ($validator->fails()) {
+                return $this->validation($validator);
+            }
+
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'username' => $request->username,
+                'role'     => $request->role,
+            ]);
+
+            return $this->success('Data saved successfully', [], 200);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'User create failed');
         }
-
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'username' => $request->username,
-            'role'     => $request->role,
-        ]);
-
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'message' => 'User registered successfully.',
-            'data'    => $user,
-        ], 200);
     }
 
     // fetch
     public function fetch(Request $request, $id = null)
     {
         try {
-            // 🔹 SINGLE USER BY ID
+            // SINGLE
             if ($id !== null) {
-                $user = User::select('id','name','email','username','role','created_at')
-                    ->find($id);
+                $user = User::select('id','name','email','username','role','created_at')->find($id);
 
-                if (! $user) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'User not found.',
-                    ], 404);
+                if (!$user) {
+                    return $this->error('User not found.', 404);
                 }
 
-                return response()->json([
-                    'code' => 200,
-                    'status' => true,
-                    'data' => $user,
-                ], 200);
+                return $this->success('Data fetched successfully', $user, 200);
             }
 
-            // 🔹 LIST USERS
-            $limit  = (int) $request->input('limit', 10);
-            $offset = (int) $request->input('offset', 0);
+            // LIST (with pagination)
+            $limit  = max(1, (int) $request->input('limit', 10));
+            $offset = max(0, (int) $request->input('offset', 0));
             $search = trim((string) $request->input('search', ''));
-
-            $total = User::count();
+            $role = trim((string) $request->input('role', ''));
 
             $q = User::select('id','name','email','username','role','created_at')
                 ->orderBy('id','desc');
@@ -85,19 +73,26 @@ class UserController extends Controller
                 });
             }
 
-            $items = $q->skip($offset)->take($limit)->get();
+            if ($role !== '') {
+                $q->where('role', $role);
+            }
 
-            return response()->json([
-                'code' => 200,
-                'status' => true,
-                'total' => $total,
-                'count' => $items->count(),
-                'data' => $items,
-            ], 200);
+            $total = (clone $q)->count();
+
+            $items = $q->skip($offset)->take($limit)->get();
+            $count = $items->count();
+
+            return $this->success('Data fetched successfully', $items, 200, [
+                'pagination' => [
+                    'limit'  => $limit,
+                    'offset' => $offset,
+                    'count'  => $count,
+                    'total'  => $total,
+                ]
+            ]);
 
         } catch (\Throwable $e) {
-            Log::error('User fetch failed', ['error'=>$e->getMessage()]);
-            return response()->json(['message'=>'Failed to fetch users'], 500);
+            return $this->serverError($e, 'User fetch failed');
         }
     }
 
@@ -105,132 +100,89 @@ class UserController extends Controller
     public function updatePassword(Request $request)
     {
         try {
-            // 1️⃣ Validate input
-            $request->validate([
+            $validator = Validator::make($request->all(), [
                 'username' => ['required', 'string', 'exists:users,username'],
                 'password' => ['required', 'string', 'min:8'],
             ]);
 
-            // 2️⃣ Find user by username
-            $user = User::where('username', $request->username)->first();
-
-            if (! $user) {
-                return response()->json([
-                    'code'    => 404,
-                    'status'  => false,
-                    'message' => 'User not found.',
-                ], 404);
+            if ($validator->fails()) {
+                return $this->validation($validator);
             }
 
-            // 3️⃣ Update password (ALWAYS hash)
+            $user = User::where('username', $request->username)->first();
+
+            if (!$user) {
+                return $this->error('User not found.', 404);
+            }
+
             $user->password = Hash::make($request->password);
             $user->save();
 
-            return response()->json([
-                'code'    => 200,
-                'status'  => true,
-                'message' => 'Password updated successfully.',
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'code'    => 422,
-                'status'  => false,
-                'message' => 'Validation error!',
-                'errors'  => $e->errors(),
-            ], 422);
+            return $this->success('Data saved successfully', [], 200);
 
         } catch (\Throwable $e) {
-            Log::error('Password update failed', [
-                'error' => $e->getMessage(),
-                'file'  => $e->getFile(),
-                'line'  => $e->getLine(),
-            ]);
-
-            return response()->json([
-                'code'    => 500,
-                'status'  => false,
-                'message' => 'Something went wrong while updating password.',
-            ], 500);
+            return $this->serverError($e, 'Password update failed');
         }
     }
 
     // update
     public function edit(Request $request, $id)
     {
-        $user = User::find($id);
+        try {
+            $user = User::find($id);
 
-        if (!$user) {
-            return response()->json([
-                'code' => 200,
-                'success' => false,
-                'message' => 'User not found.',
-                'data' => [],
-            ], 404);
+            if (!$user) {
+                return $this->error('User not found.', 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'name'     => 'required|string|max:255',
+                'email'    => 'nullable|email|unique:users,email,' . $user->id,
+                'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+                'role'     => 'required|in:admin,user,sub-admin',
+                'password' => 'nullable|string|min:6|confirmed',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validation($validator);
+            }
+
+            $updateData = [
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'username' => $request->username,
+                'role'     => $request->role,
+            ];
+
+            if (!empty($request->password)) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+
+            $user->update($updateData);
+
+            return $this->success('Data saved successfully', [], 200);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'User update failed');
         }
-
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email,' . $user->id,
-            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
-            'role'     => 'required|in:admin,user,sub-admin',
-
-            // optional password update
-            'password' => 'nullable|string|min:6|confirmed',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'code' => 200,
-                'success' => 'error',
-                'message' => 'Validation failed.',
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
-
-        $updateData = [
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'username' => $request->username,
-            'role'     => $request->role,
-        ];
-
-        // Update password only if provided
-        if (!empty($request->password)) {
-            $updateData['password'] = Hash::make($request->password);
-        }
-
-        $user->update($updateData);
-
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'message' => 'User updated successfully.',
-            'data' => $user->fresh(),
-        ], 200);
     }
 
     // delete
     public function delete($id)
     {
-        $user = User::find($id);
+        try {
+            $user = User::find($id);
 
-        if (!$user) {
-            return response()->json([
-                'code' => 200,
-                'success' => false,
-                'message' => 'User not found.',
-                'data' => [],
-            ], 404);
+            if (!$user) {
+                return $this->error('User not found.', 404);
+            }
+
+            $user->delete();
+
+            return $this->success('Data saved successfully', [], 200);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'User delete failed');
         }
-
-        $user->delete();
-
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'message' => 'User deleted successfully.',
-            'data' => [],
-        ], 200);
     }
 }
