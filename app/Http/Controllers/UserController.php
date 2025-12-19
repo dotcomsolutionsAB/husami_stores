@@ -35,7 +35,7 @@ class UserController extends Controller
                 'role'     => $request->role,
             ]);
 
-            return $this->success('Data saved successfully', [], 200);
+            return $this->success('Data saved successfully', $user, 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'User create failed');
@@ -118,7 +118,7 @@ class UserController extends Controller
             $user->password = Hash::make($request->password);
             $user->save();
 
-            return $this->success('Data saved successfully', [], 200);
+            return $this->success('Data saved successfully', $user, 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Password update failed');
@@ -160,7 +160,7 @@ class UserController extends Controller
 
             $user->update($updateData);
 
-            return $this->success('Data saved successfully', [], 200);
+            return $this->success('Data saved successfully', $user, 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'User update failed');
