@@ -6,6 +6,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UserController extends Controller
 {
@@ -179,10 +183,56 @@ class UserController extends Controller
 
             $user->delete();
 
-            return $this->success('Data saved successfully', [], 200);
+            return $this->success('User Deleted successfully', [], 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'User delete failed');
+        }
+    }
+    /**
+     * Export Users to Excel (filters same as fetch API)
+     * - Supports: search, role (and optional limit/offset if you want)
+     * - Stores file in: storage/app/public/exports/users/{fileName}
+     * - Returns public URL in response
+     */
+    public function exportExcel(Request $request)
+    {
+        try {
+            // Same filters as fetch
+            $limit  = $request->has('limit')  ? max(1, (int) $request->input('limit'))  : null; // optional
+            $offset = $request->has('offset') ? max(0, (int) $request->input('offset')) : null; // optional
+            $search = trim((string) $request->input('search', ''));
+            $role   = trim((string) $request->input('role', ''));
+
+            // Ensure directory exists
+            $dir = storage_path('app/public/exports/users');
+            if (!File::exists($dir)) {
+                File::makeDirectory($dir, 0755, true);
+            }
+
+            // File name
+            $fileName = 'users_' . now()->format('Ymd_His') . '_' . Str::random(8) . '.xlsx';
+
+            // Relative path for "public" disk
+            $relativePath = 'exports/users/' . $fileName;
+
+            // Store excel in public disk (=> storage/app/public/exports/users/..)
+            Excel::store(
+                new UsersExport($search, $role, $limit, $offset),
+                $relativePath,
+                'public'
+            );
+
+            // Public URL (requires: php artisan storage:link)
+            $url = asset('storage/' . $relativePath);
+
+            return $this->success('Excel exported successfully.', [
+                'file_name' => $fileName,
+                'url'       => $url,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Users export failed');
         }
     }
 }
