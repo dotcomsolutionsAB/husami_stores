@@ -46,7 +46,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [UserController::class, 'create']);
         Route::post('/retrieve/{id?}', [UserController::class, 'fetch']);
         Route::post('/update/{id}', [UserController::class, 'edit']);
-        Route::get('/delete/{id}', [UserController::class, 'delete']);
+        Route::delete('/delete/{id}', [UserController::class, 'delete']);
         // Route::post('/reset_password', [AuthController::class, 'updatePassword']);
         Route::post('/export', [UserController::class, 'exportExcel']);
         Route::post('/change_password', [UserController::class, 'updatePassword']);
@@ -59,7 +59,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
             Route::post('/create', [UserAccessController::class, 'create']);
             Route::post('/retrieve/{id?}', [UserAccessController::class, 'fetch']);
             Route::post('/update/{id}', [UserAccessController::class, 'edit']);
-            Route::get('/delete/{id}', [UserAccessController::class, 'delete']);
+            Route::delete('/delete/{id}', [UserAccessController::class, 'delete']);
     });
 
     // brand route
@@ -67,7 +67,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [BrandController::class, 'create']);
         Route::post('/retrieve/{id?}', [BrandController::class, 'fetch']);
         Route::post('/update/{id}', [BrandController::class, 'edit']);
-        Route::get('/delete/{id}', [BrandController::class, 'delete']);
+        Route::delete('/delete/{id}', [BrandController::class, 'delete']);
     });
 
     // uploads route
@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [UploadsController::class, 'create']);
         Route::post('/retrieve/{id?}', [UploadsController::class, 'fetch']);
         Route::post('/update/{id}', [UploadsController::class, 'edit']);
-        Route::get('/delete/{id}', [UploadsController::class, 'delete']);
+        Route::delete('/delete/{id}', [UploadsController::class, 'delete']);
     });
 
     // godown route
@@ -83,7 +83,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [GodownController::class, 'create']);
         Route::post('/retrieve/{id?}', [GodownController::class, 'fetch']);
         Route::post('/update/{id}', [GodownController::class, 'edit']);
-        Route::get('/delete/{id}', [GodownController::class, 'delete']);
+        Route::delete('/delete/{id}', [GodownController::class, 'delete']);
         Route::post('/export', [GodownController::class, 'exportExcel']);
     });
 
@@ -92,7 +92,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [ StateController::class, 'create']);
         Route::post('/retrieve/{id?}', [ StateController::class, 'fetch']);
         Route::post('/update/{id}', [ StateController::class, 'edit']);
-        Route::get('/delete/{id}', [ StateController::class, 'delete']);
+        Route::delete('/delete/{id}', [ StateController::class, 'delete']);
     });
     
     // counter route
@@ -100,7 +100,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [CounterController::class, 'create']);
         Route::post('/retrieve/{id?}', [CounterController::class, 'fetch']);
         Route::post('/update/{id}', [CounterController::class, 'edit']);
-        Route::get('/delete/{id}', [CounterController::class, 'delete']);
+        Route::delete('/delete/{id}', [CounterController::class, 'delete']);
     });
 
     // template route
@@ -108,7 +108,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [TemplateController::class, 'create']);
         Route::post('/retrieve/{id?}', [TemplateController::class, 'fetch']);
         Route::post('/update/{id}', [TemplateController::class, 'edit']);
-        Route::get('/delete/{id}', [TemplateController::class, 'delete']);
+        Route::delete('/delete/{id}', [TemplateController::class, 'delete']);
     });
 
     // product route
@@ -116,7 +116,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [ProductsController::class, 'create']);
         Route::post('/retrieve/{id?}', [ProductsController::class, 'fetch']);
         Route::post('/update/{id}', [ProductsController::class, 'edit']);
-        Route::get('/delete/{id}', [ProductsController::class, 'delete']);
+        Route::delete('/delete/{id}', [ProductsController::class, 'delete']);
     });
 
     // template route
@@ -124,7 +124,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [TemplateController::class, 'create']);
         Route::post('/retrieve/{id?}', [TemplateController::class, 'fetch']);
         Route::post('/update/{id}', [TemplateController::class, 'edit']);
-        Route::get('/delete/{id}', [TemplateController::class, 'delete']);
+        Route::delete('/delete/{id}', [TemplateController::class, 'delete']);
     });
 
     // product-stock route
@@ -132,7 +132,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [ProductStockController::class, 'create']);
         Route::post('/retrieve/{id?}', [ProductStockController::class, 'fetch']);
         Route::post('/update/{id}', [ProductStockController::class, 'edit']);
-        Route::get('/delete/{id}', [ProductStockController::class, 'delete']);
+        Route::delete('/delete/{id}', [ProductStockController::class, 'delete']);
     });
 
     // logs route
@@ -145,7 +145,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [TemplateController::class, 'create']);
         Route::post('/retrieve/{id?}', [TemplateController::class, 'fetch']);
         Route::post('/update/{id}', [TemplateController::class, 'edit']);
-        Route::get('/delete/{id}', [TemplateController::class, 'delete']);
+        Route::delete('/delete/{id}', [TemplateController::class, 'delete']);
     });
 
     // clients route
@@ -153,7 +153,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [ClientsController::class, 'create']);
         Route::post('/retrieve/{id?}', [ClientsController::class, 'fetch']);
         Route::post('/update/{id}', [ClientsController::class, 'edit']);
-        Route::get('/delete/{id}', [ClientsController::class, 'delete']);
+        Route::delete('/delete/{id}', [ClientsController::class, 'delete']);
         Route::post('/export', [ClientsController::class, 'exportExcel']);
     });
 
@@ -162,7 +162,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [SuppliersController::class, 'create']);
         Route::post('/retrieve/{id?}', [SuppliersController::class, 'fetch']);
         Route::post('/update/{id}', [SuppliersController::class, 'edit']);
-        Route::get('/delete/{id}', [SuppliersController::class, 'delete']);
+        Route::delete('/delete/{id}', [SuppliersController::class, 'delete']);
         Route::post('/export', [SuppliersController::class, 'exportExcel']);
     });
 
@@ -171,7 +171,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [PickUpCartController::class, 'create']);
         Route::post('/retrieve/{id?}', [PickUpCartController::class, 'fetch']);
         Route::post('/update/{id}', [PickUpCartController::class, 'edit']);
-        Route::get('/delete/{id}', [PickUpCartController::class, 'delete']);
+        Route::delete('/delete/{id}', [PickUpCartController::class, 'delete']);
     });
 
     // pickup-slip route
@@ -179,7 +179,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [PickUpSlipController::class, 'create']);
         Route::post('/retrieve/{id?}', [PickUpSlipController::class, 'fetch']);
         Route::post('/update/{id}', [PickUpSlipController::class, 'edit']);
-        Route::get('/delete/{id}', [PickUpSlipController::class, 'delete']);
+        Route::delete('/delete/{id}', [PickUpSlipController::class, 'delete']);
     });
 
     // quotation route
@@ -187,7 +187,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [QuotationController::class, 'create']);
         Route::post('/retrieve/{id?}', [QuotationController::class, 'fetch']);
         Route::post('/update/{id}', [QuotationController::class, 'edit']);
-        Route::get('/delete/{id}', [QuotationController::class, 'delete']);
+        Route::delete('/delete/{id}', [QuotationController::class, 'delete']);
         Route::post('/export', [QuotationController::class, 'exportExcel']);
     });
 
@@ -196,7 +196,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [ProformaController::class, 'create']);
         Route::post('/retrieve/{id?}', [ProformaController::class, 'fetch']);
         Route::post('/update/{id}', [ProformaController::class, 'edit']);
-        Route::get('/delete/{id}', [ProformaController::class, 'delete']);
+        Route::delete('/delete/{id}', [ProformaController::class, 'delete']);
         Route::post('/export', [ProformaController::class, 'exportExcel']);
     });
 
@@ -205,7 +205,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [SalesOrderController::class, 'create']);
         Route::post('/retrieve/{id?}', [SalesOrderController::class, 'fetch']);
         Route::post('/update/{id}', [SalesOrderController::class, 'edit']);
-        Route::get('/delete/{id}', [SalesOrderController::class, 'delete']);
+        Route::delete('/delete/{id}', [SalesOrderController::class, 'delete']);
         Route::post('/export', [SalesOrderController::class, 'exportExcel']);
     });
 
@@ -214,7 +214,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [SalesInvoiceController::class, 'create']);
         Route::post('/retrieve/{id?}', [SalesInvoiceController::class, 'fetch']);
         Route::post('/update/{id}', [SalesInvoiceController::class, 'edit']);
-        Route::get('/delete/{id}', [SalesInvoiceController::class, 'delete']);
+        Route::delete('/delete/{id}', [SalesInvoiceController::class, 'delete']);
         Route::post('/export', [SalesInvoiceController::class, 'exportExcel']);
     });
 
@@ -223,7 +223,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [BookOrderController::class, 'create']);
         Route::post('/retrieve/{id?}', [BookOrderController::class, 'fetch']);
         Route::post('/update/{id}', [BookOrderController::class, 'edit']);
-        Route::get('/delete/{id}', [BookOrderController::class, 'delete']);
+        Route::delete('/delete/{id}', [BookOrderController::class, 'delete']);
     });
 
     // purchase-order route
@@ -231,7 +231,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [PurchaseOrderController::class, 'create']);
         Route::post('/retrieve/{id?}', [PurchaseOrderController::class, 'fetch']);
         Route::post('/update/{id}', [PurchaseOrderController::class, 'edit']);
-        Route::get('/delete/{id}', [PurchaseOrderController::class, 'delete']);
+        Route::delete('/delete/{id}', [PurchaseOrderController::class, 'delete']);
     });
 
     // purchase-invoice route
@@ -239,7 +239,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [PurchaseInvoiceController::class, 'create']);
         Route::post('/retrieve/{id?}', [PurchaseInvoiceController::class, 'fetch']);
         Route::post('/update/{id}', [PurchaseInvoiceController::class, 'edit']);
-        Route::get('/delete/{id}', [PurchaseInvoiceController::class, 'delete']);
+        Route::delete('/delete/{id}', [PurchaseInvoiceController::class, 'delete']);
     });
 
     // purchase-bag route
@@ -247,7 +247,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [PurchaseBagController::class, 'create']);
         Route::post('/retrieve/{id?}', [PurchaseBagController::class, 'fetch']);
         Route::post('/update/{id}', [PurchaseBagController::class, 'edit']);
-        Route::get('/delete/{id}', [PurchaseBagController::class, 'delete']);
+        Route::delete('/delete/{id}', [PurchaseBagController::class, 'delete']);
     });
 
     // purchase-bag route
@@ -255,7 +255,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [PurchaseBagController::class, 'create']);
         Route::post('/retrieve/{id?}', [PurchaseBagController::class, 'fetch']);
         Route::post('/update/{id}', [PurchaseBagController::class, 'edit']);
-        Route::get('/delete/{id}', [PurchaseBagController::class, 'delete']);
+        Route::delete('/delete/{id}', [PurchaseBagController::class, 'delete']);
     });
 
     // grn route
@@ -263,7 +263,7 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [GrnController::class, 'create']);
         Route::post('/retrieve/{id?}', [GrnController::class, 'fetch']);
         Route::post('/update/{id}', [GrnController::class, 'edit']);
-        Route::get('/delete/{id}', [GrnController::class, 'delete']);
+        Route::delete('/delete/{id}', [GrnController::class, 'delete']);
     });
 
     // stock-transfer route
@@ -271,6 +271,6 @@ Route::middleware('auth:sanctum', 'role:admin,user,sub-admin')->group(function (
         Route::post('/create', [StockTransferController::class, 'create']);
         Route::post('/retrieve/{id?}', [StockTransferController::class, 'fetch']);
         Route::post('/update/{id}', [StockTransferController::class, 'edit']);
-        Route::get('/delete/{id}', [StockTransferController::class, 'delete']);
+        Route::delete('/delete/{id}', [StockTransferController::class, 'delete']);
     });
 });
