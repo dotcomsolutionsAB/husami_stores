@@ -35,12 +35,14 @@ trait ApiResponse
         // Your required format:
         // { code: 422, status: "error", message: ["Error message"] }
         // We'll return ALL errors flattened as array.
-        $all = collect($validator->errors()->all())->values()->all();
+        // $all = collect($validator->errors()->all())->values()->all();
+        // Get ONLY the first error message
+        $firstError = $validator->errors()->first();
 
         return response()->json([
             'code'   => 422,
             'status' => 'error',
-            'message'=> $all,
+            'message'=> $firstError,
         ], 422);
     }
 
