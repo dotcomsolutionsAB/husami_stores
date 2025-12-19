@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 class AuthController extends Controller
 {
     //
+    use ApiResponse;
     // login
     public function login(Request $request)
     {
