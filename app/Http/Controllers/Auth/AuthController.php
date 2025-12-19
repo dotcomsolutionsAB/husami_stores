@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
+use App\Traits\ApiResponse;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -11,7 +12,6 @@ use Illuminate\Http\Request;
 class AuthController extends Controller
 {
     //
-    use ApiResponse;
     // login
     public function login(Request $request)
     {
