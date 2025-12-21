@@ -1,24 +1,33 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\Traits\ApiResponse;
 use App\Models\BrandModel;
 use App\Models\UploadModel;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
 class BrandController extends Controller
 {
-    // create
+    use ApiResponse;
+
+    // CREATE
     public function create(Request $request)
     {
         try {
-            // 1️⃣ Validation (schema aligned)
-            $request->validate([
+            // 1️⃣ Validate
+            $validator = Validator::make($request->all(), [
                 'name'     => ['required', 'string', 'max:255'],
                 'order_by' => ['nullable', 'integer', 'min:0'],
                 'hex_code' => ['nullable', 'string', 'max:9'],
-                'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'], // 5MB
+                'logo'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
             ]);
+
+            if ($validator->fails()) {
+                return $this->validation($validator);
+            }
 
             $logoUploadId = null;
 
@@ -27,17 +36,11 @@ class BrandController extends Controller
 
                 $path = $file->store('brands/logos', 'public');
 
-                // Get extension safely (lowercase)
-                $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: '');
-
-                // Size in bytes
-                $size = (int) $file->getSize();
-
                 $upload = UploadModel::create([
                     'file_name' => $file->getClientOriginalName(),
                     'file_path' => $path,
-                    'file_ext'  => $ext,   
-                    'file_size' => $size, 
+                    'file_ext'  => strtolower($file->getClientOriginalExtension()),
+                    'file_size' => (int) $file->getSize(),
                 ]);
 
                 $logoUploadId = $upload->id;
@@ -51,112 +54,82 @@ class BrandController extends Controller
                 'logo'     => $logoUploadId,
             ]);
 
-            return response()->json([
-                'code'    => 200,
-                'status'  => true,
-                'message' => 'Brand created successfully.',
-                'data'    => $brand,
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'code'   => 422,
-                'status' => false,
-                'errors' => $e->errors(),
-            ], 422);
+            return $this->success('Brand created successfully.', $brand, 200);
 
         } catch (\Throwable $e) {
-            Log::error('Brand create failed', [
-                'error' => $e->getMessage(),
-                'file'  => $e->getFile(),
-                'line'  => $e->getLine(),
-            ]);
-
-            return response()->json([
-                'code'    => 500,
-                'status'  => false,
-                'message' => 'Something went wrong while creating brand.',
-            ], 500);
+            return $this->serverError($e, 'Brand create failed');
         }
     }
 
+    // FETCH
     public function fetch(Request $request, $id = null)
     {
         try {
             // 🔹 SINGLE BRAND
             if ($id !== null) {
-                $brand = BrandModel::with('logoRef:id,file_path')
-                    ->find($id);
+                $brand = BrandModel::with('logoRef:id,file_path')->find($id);
 
-                if (! $brand) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Brand not found.',
-                    ], 404);
+                if (!$brand) {
+                    return $this->error('Brand not found.', 404);
                 }
 
-                return response()->json([
-                    'code' => 200,
-                    'status' => true,
-                    'data' => [
-                        'id' => $brand->id,
-                        'name' => $brand->name,
-                        'order_by' => $brand->order_by,
-                        'hex_code' => $brand->hex_code,
-                        'logo' => $brand->logoRef
-                            ? [
-                                'id'  => $brand->logoRef->id,
-                                'url' => asset('storage/' . ltrim($brand->logoRef->file_path, '/')),
-                            ]
-                            : null,
-                        ],
+                return $this->success('Data fetched successfully', [
+                    'id'       => $brand->id,
+                    'name'     => $brand->name,
+                    'order_by' => $brand->order_by,
+                    'hex_code' => $brand->hex_code,
+                    'logo'     => $brand->logoRef
+                        ? [
+                            'id'  => $brand->logoRef->id,
+                            'url' => asset('storage/' . ltrim($brand->logoRef->file_path, '/')),
+                        ]
+                        : null,
                 ], 200);
             }
 
             // 🔹 LIST BRANDS
-            $limit  = (int) $request->input('limit', 10);
-            $offset = (int) $request->input('offset', 0);
+            $limit  = max(1, (int) $request->input('limit', 10));
+            $offset = max(0, (int) $request->input('offset', 0));
             $search = trim((string) $request->input('search', ''));
 
-            $total = BrandModel::count();
-
             $q = BrandModel::with('logoRef:id,file_path')
-                ->orderBy('order_by','asc')
-                ->orderBy('id','desc');
+                ->orderBy('order_by', 'asc')
+                ->orderBy('id', 'desc');
 
             if ($search !== '') {
                 $q->where('name', 'like', "%{$search}%");
             }
 
+            $total = (clone $q)->count();
+
             $items = $q->skip($offset)->take($limit)->get();
 
             $data = $items->map(function ($b) {
-
-            $logoUrl = $b->logoRef
-                ? asset('storage/' . ltrim($b->logoRef->file_path, '/'))
-                : null;
                 return [
-                    'id' => $b->id,
-                    'name' => $b->name,
+                    'id'       => $b->id,
+                    'name'     => $b->name,
                     'order_by' => $b->order_by,
                     'hex_code' => $b->hex_code,
                     'logo'     => $b->logoRef
-                        ? ['id' => $b->logoRef->id, 'url' => $logoUrl]
+                        ? [
+                            'id'  => $b->logoRef->id,
+                            'url' => asset('storage/' . ltrim($b->logoRef->file_path, '/')),
+                        ]
                         : null,
                 ];
             });
 
-            return response()->json([
-                'code' => 200,
-                'status' => true,
-                'total' => $total,
-                'count' => $data->count(),
-                'data' => $data,
-            ], 200);
+            return $this->success('Data fetched successfully', $data, 200, [
+                'pagination' => [
+                    'limit'  => $limit,
+                    'offset' => $offset,
+                    'count'  => $data->count(),
+                    'total'  => $total,
+                ]
+            ]);
 
         } catch (\Throwable $e) {
-            Log::error('Brand fetch failed', ['error'=>$e->getMessage()]);
-            return response()->json(['message'=>'Failed to fetch brands'], 500);
+            return $this->serverError($e, 'Brand fetch failed');
         }
     }
 }
