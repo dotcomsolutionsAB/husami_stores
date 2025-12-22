@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('t_products', function (Blueprint $table) {
             $table->id();
+            $table->string('sku')->unique();
             $table->string('grade_no')->nullable();
             $table->string('item_name');
             $table->string('size')->nullable();

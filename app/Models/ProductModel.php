@@ -9,6 +9,11 @@ class ProductModel extends Model
     //
     protected $table = 't_products';
     protected $fillable = [
-        'grade_no','item_name','size','brand','units','list_price','hsn','tax','low_stock_level'
+        'sku', 'grade_no','item_name','size','brand','units','list_price','hsn','tax','low_stock_level'
+    ];
+
+    protected $casts = [
+        'list_price' => 'decimal:2',
+        'tax' => 'decimal:2',
     ];
 }

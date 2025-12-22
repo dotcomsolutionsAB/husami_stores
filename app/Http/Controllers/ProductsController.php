@@ -16,6 +16,7 @@ class ProductsController extends Controller
         try {
             // 1️⃣ Validate
             $validator = Validator::make($request->all(), [
+                'sku'             => ['required','string','max:255','unique:t_products,sku'],
                 'grade_no'        => ['nullable', 'string', 'max:255'],
                 'item_name'       => ['required', 'string', 'max:255'],
                 'size'            => ['nullable', 'string', 'max:255'],
@@ -68,7 +69,9 @@ class ProductsController extends Controller
 
             if ($search !== '') {
                 $q->where(function ($w) use ($search) {
-                    $w->where('grade_no', 'like', "%{$search}%")
+                    $w->where('sku', 'like', "%{$search}%")
+                    ->orWhere('item_name', 'like', "%{$search}%")
+                    ->orWhere('grade_no', 'like', "%{$search}%")
                     ->orWhere('size', 'like', "%{$search}%");
                 });
             }
@@ -111,6 +114,7 @@ class ProductsController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
+                'sku'             => ['required', 'string', 'max:255', 'unique:t_products,sku,' . $id],
                 'grade_no'        => ['nullable', 'string', 'max:255'],
                 'item_name'       => ['required', 'string', 'max:255'],
                 'size'            => ['nullable', 'string', 'max:255'],
