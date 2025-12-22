@@ -39,6 +39,60 @@ class ProductStockController extends Controller
         }
     }
 
+    private function mapTcAttachmentsToPaths($rows)
+    {
+        // $rows can be Collection (list) or single object
+        $isSingle = !($rows instanceof \Illuminate\Support\Collection);
+
+        $collection = $isSingle ? collect([$rows]) : $rows;
+
+        // collect all upload ids from all rows (comma separated)
+        $allIds = $collection->flatMap(function ($r) {
+            $raw = (string) ($r->tc_attachment ?? '');
+            $ids = array_filter(array_map('trim', explode(',', $raw)));
+            return collect($ids)->map(fn($x) => (int) $x)->filter(fn($x) => $x > 0);
+        })->unique()->values();
+
+        if ($allIds->isEmpty()) {
+            // ensure tc_attachment_paths exists
+            $collection->each(function ($r) {
+                $r->tc_attachment_paths = [];
+            });
+
+            return $isSingle ? $collection->first() : $collection;
+        }
+
+        // fetch uploads in one query
+        $uploadMap = UploadModel::whereIn('id', $allIds)
+            ->get(['id', 'file_url']) // file_url like "storage/uploads/..."
+            ->keyBy('id');
+
+        $collection->each(function ($r) use ($uploadMap) {
+            $raw = (string) ($r->tc_attachment ?? '');
+            $ids = array_filter(array_map('trim', explode(',', $raw)));
+
+            $paths = [];
+            foreach ($ids as $id) {
+                $id = (int) $id;
+                if ($id > 0 && $uploadMap->has($id)) {
+                    // If you want full URL:
+                    $paths[] = asset($uploadMap[$id]->file_url);
+
+                    // If you want only file_path (relative):
+                    // $paths[] = $uploadMap[$id]->file_url;
+                }
+            }
+
+            // keep original ids if you want, but add paths array
+            $r->tc_attachment_paths = $paths;
+
+            // OR if you want to replace tc_attachment entirely:
+            // $r->tc_attachment = $paths;
+        });
+
+        return $isSingle ? $collection->first() : $collection;
+    }
+
     // ✅ CREATE (all non-null required)
     public function create(Request $request)
     {
@@ -109,6 +163,7 @@ class ProductStockController extends Controller
             if ($id !== null) {
                 $row = ProductStockModel::with('product')->find($id);
                 if (!$row) return $this->error('Record not found.', 404);
+                $row = $this->mapTcAttachmentsToPaths($row);
 
                 return $this->success('Data fetched successfully', $row, 200);
             }
@@ -178,6 +233,7 @@ class ProductStockController extends Controller
 
             $items = $q->skip($offset)->take($limit)->get();
             $count = $items->count();
+            $items = $this->mapTcAttachmentsToPaths($items);
 
             return $this->success('Data fetched successfully', $items, 200, [
                 'pagination' => [
