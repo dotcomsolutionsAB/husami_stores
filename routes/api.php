@@ -29,6 +29,7 @@ use App\Http\Controllers\PurchaseBagController;
 use App\Http\Controllers\PurchaseInvoiceController;
 use App\Http\Controllers\GrnController;
 use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\MasterDataController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -272,5 +273,13 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/retrieve/{id?}', [StockTransferController::class, 'fetch']);
         Route::post('/update/{id}', [StockTransferController::class, 'edit']);
         Route::delete('/delete/{id}', [StockTransferController::class, 'delete']);
+    });
+
+    // master-views route
+    Route::prefix('masters')->group(function () {
+        Route::get('/grades', [StockTransferController::class, 'grades']);
+        Route::get('/items', [StockTransferController::class, 'items']);
+        Route::get('/sizes', [StockTransferController::class, 'sizes']);
+        Route::get('/racks', [StockTransferController::class, 'racks']);
     });
 });

@@ -26,6 +26,8 @@ class ProductsController extends Controller
                 'hsn'             => ['nullable', 'string', 'max:32'],
                 'tax'             => ['required', 'numeric', 'min:0', 'max:100'],
                 'low_stock_level' => ['nullable', 'integer', 'min:0'],
+                'finish_type'     => ['nullable', 'string', 'max:255'],
+                'specifications'  => ['nullable', 'string', 'max:255'],
             ]);
 
             if ($validator->fails()) {
@@ -123,6 +125,8 @@ class ProductsController extends Controller
                 'hsn'             => ['nullable', 'string', 'max:32'],
                 'tax'             => ['required', 'numeric', 'min:0', 'max:100'],
                 'low_stock_level' => ['nullable', 'integer', 'min:0'],
+                'finish_type'     => ['nullable', 'string', 'max:255'],
+                'specifications'  => ['nullable', 'string', 'max:255'],
             ]);
 
             if ($validator->fails()) {
@@ -137,7 +141,6 @@ class ProductsController extends Controller
             return $this->serverError($e, 'Product update failed');
         }
     }
-
 
     // delete
     public function delete($id)

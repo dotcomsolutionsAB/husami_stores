@@ -14,6 +14,18 @@ return new class extends Migration
         Schema::create('t_product_stocks', function (Blueprint $table) {
             $table->id();
             // extend later: product_id, godown_id, quantity, etc.
+            $table->unsignedInteger('product_id');   // t_products.id
+            $table->unsignedInteger('godown_id');   // t_godown.id
+            $table->unsignedInteger('quantity');
+            $table->unsignedInteger('ctn');
+            $table->string('batch_no');   
+            $table->string('rack_no');   
+            $table->string('invoice_no');
+            $table->date('invoice_date');
+            $table->string('tc_no')->nullable();
+            $table->date('tc_date')->nullable();
+            $table->unsignedInteger('tc_attachment')->nullable();
+            $table->longText('remarks')->nullable();
             $table->timestamps();
         });
     }

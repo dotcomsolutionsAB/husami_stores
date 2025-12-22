@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('hsn', 32)->nullable();
             $table->decimal('tax', 5, 2)->default(0);
             $table->unsignedInteger('low_stock_level')->default(0);
+            $table->string('finish_type')->nullable();
+            $table->string('specifications')->nullable();
             $table->timestamps();
 
             $table->index(['item_name','grade_no','size']);
