@@ -277,9 +277,9 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
 
     // master-views route
     Route::prefix('masters')->group(function () {
-        Route::get('/grades', [StockTransferController::class, 'grades']);
-        Route::get('/items', [StockTransferController::class, 'items']);
-        Route::get('/sizes', [StockTransferController::class, 'sizes']);
-        Route::get('/racks', [StockTransferController::class, 'racks']);
+        Route::get('/grades', [MasterDataController::class, 'grades']);
+        Route::get('/items', [MasterDataController::class, 'items']);
+        Route::get('/sizes', [MasterDataController::class, 'sizes']);
+        Route::get('/racks', [MasterDataController::class, 'racks']);
     });
 });
