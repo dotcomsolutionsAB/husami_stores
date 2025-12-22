@@ -325,7 +325,7 @@ class ProductStockController extends Controller
                 $stock->delete();
             });
 
-            return $this->success('Data saved successfully', [], 200);
+            return $this->success('Data deleted successfully', [], 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Product stock delete failed');
