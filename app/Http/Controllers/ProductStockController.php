@@ -64,7 +64,7 @@ class ProductStockController extends Controller
 
         // fetch uploads in one query
         $uploadMap = UploadModel::whereIn('id', $allIds)
-            ->get(['id', 'file_url']) // file_url like "storage/uploads/..."
+            ->get(['id', 'file_path']) // file_path like "storage/uploads/..."
             ->keyBy('id');
 
         $collection->each(function ($r) use ($uploadMap) {
@@ -76,10 +76,10 @@ class ProductStockController extends Controller
                 $id = (int) $id;
                 if ($id > 0 && $uploadMap->has($id)) {
                     // If you want full URL:
-                    $paths[] = asset($uploadMap[$id]->file_url);
+                    $paths[] = asset($uploadMap[$id]->file_path);
 
                     // If you want only file_path (relative):
-                    // $paths[] = $uploadMap[$id]->file_url;
+                    // $paths[] = $uploadMap[$id]->file_path;
                 }
             }
 
@@ -404,8 +404,8 @@ class ProductStockController extends Controller
         $upload = UploadModel::find($uploadId);
         if (!$upload) return;
 
-        if (!empty($upload->file_url)) {
-            $relativePath = str_replace('storage/', '', $upload->file_url);
+        if (!empty($upload->file_path)) {
+            $relativePath = str_replace('storage/', '', $upload->file_path);
             Storage::disk('public')->delete($relativePath);
         }
 
