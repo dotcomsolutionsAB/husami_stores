@@ -70,7 +70,6 @@ class ProductsController extends Controller
             if ($search !== '') {
                 $q->where(function ($w) use ($search) {
                     $w->where('sku', 'like', "%{$search}%")
-                    ->orWhere('item_name', 'like', "%{$search}%")
                     ->orWhere('grade_no', 'like', "%{$search}%")
                     ->orWhere('size', 'like', "%{$search}%");
                 });
