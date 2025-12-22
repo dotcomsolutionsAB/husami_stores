@@ -24,7 +24,7 @@ return new class extends Migration
             $table->date('invoice_date');
             $table->string('tc_no')->nullable();
             $table->date('tc_date')->nullable();
-            $table->unsignedInteger('tc_attachment')->nullable();
+            $table->string('tc_attachment')->nullable();
             $table->longText('remarks')->nullable();
             $table->timestamps();
         });
