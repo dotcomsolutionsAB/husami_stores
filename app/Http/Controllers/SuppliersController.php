@@ -6,6 +6,7 @@ use App\Traits\ApiResponse;
 use App\Models\SupplierModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Services\CsvExportService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 
@@ -175,57 +176,114 @@ class SuppliersController extends Controller
     }
 
     // EXPORT CSV
-    public function exportExcel(Request $request)
+    // public function exportExcel(Request $request)
+    // {
+    //     try {
+    //         $search = trim((string) $request->input('search', ''));
+
+    //         $q = SupplierModel::orderBy('id', 'desc');
+
+    //         if ($search !== '') {
+    //             $q->where('name', 'like', "%{$search}%");
+    //         }
+
+    //         $suppliers = $q->get();
+
+    //         if ($suppliers->isEmpty()) {
+    //             return $this->error('No suppliers found.', 404);
+    //         }
+
+    //         $dir = storage_path('app/public/exports/suppliers');
+    //         if (!File::exists($dir)) {
+    //             File::makeDirectory($dir, 0755, true);
+    //         }
+
+    //         $fileName = 'suppliers_' . now()->format('Ymd_His') . '.csv';
+    //         $filePath = $dir . '/' . $fileName;
+
+    //         $file = fopen($filePath, 'w');
+
+    //         fputcsv($file, [
+    //             'ID','Name','Address Line 1','Address Line 2','City',
+    //             'Pincode','GSTIN','State','Country','Mobile','Email',
+    //             'Created At','Updated At'
+    //         ]);
+
+    //         foreach ($suppliers as $s) {
+    //             fputcsv($file, [
+    //                 $s->id, $s->name, $s->address_line_1, $s->address_line_2,
+    //                 $s->city, $s->pincode, $s->gstin, $s->state,
+    //                 $s->country, $s->mobile, $s->email,
+    //                 $s->created_at, $s->updated_at,
+    //             ]);
+    //         }
+
+    //         fclose($file);
+
+    //         return $this->success('CSV exported successfully.', [
+    //             'file_name' => $fileName,
+    //             'url'       => asset('storage/exports/suppliers/' . $fileName),
+    //         ], 200);
+
+    //     } catch (\Throwable $e) {
+    //         return $this->serverError($e, 'Supplier export failed');
+    //     }
+    // }
+    public function exportExcel(Request $request, CsvExportService $csv)
     {
         try {
             $search = trim((string) $request->input('search', ''));
 
             $q = SupplierModel::orderBy('id', 'desc');
-
-            if ($search !== '') {
-                $q->where('name', 'like', "%{$search}%");
-            }
+            if ($search !== '') $q->where('name', 'like', "%{$search}%");
 
             $suppliers = $q->get();
 
             if ($suppliers->isEmpty()) {
-                return $this->error('No suppliers found.', 404);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No suppliers found.',
+                ], 404);
             }
 
-            $dir = storage_path('app/public/exports/suppliers');
-            if (!File::exists($dir)) {
-                File::makeDirectory($dir, 0755, true);
-            }
+            $headers = ['ID', 'Name', 'Address Line 1', 'Address Line 2', 'City', 'Pincode', 'GSTIN', 'State', 'Country', 'Mobile', 'Email', 'Created At', 'Updated At'];
 
-            $fileName = 'suppliers_' . now()->format('Ymd_His') . '.csv';
-            $filePath = $dir . '/' . $fileName;
+            $result = $csv->export(
+                'exports/suppliers',
+                'suppliers',
+                $headers,
+                $suppliers,
+                function ($supplier) {
+                    return [
+                        $supplier->id,
+                        $supplier->name,
+                        $supplier->address_line_1,
+                        $supplier->address_line_2,
+                        $supplier->city,
+                        $supplier->pincode,
+                        $supplier->gstin,
+                        $supplier->state,
+                        $supplier->country,
+                        $supplier->mobile,
+                        $supplier->email,
+                        $supplier->created_at,
+                        $supplier->updated_at,
+                    ];
+                }
+            );
 
-            $file = fopen($filePath, 'w');
-
-            fputcsv($file, [
-                'ID','Name','Address Line 1','Address Line 2','City',
-                'Pincode','GSTIN','State','Country','Mobile','Email',
-                'Created At','Updated At'
-            ]);
-
-            foreach ($suppliers as $s) {
-                fputcsv($file, [
-                    $s->id, $s->name, $s->address_line_1, $s->address_line_2,
-                    $s->city, $s->pincode, $s->gstin, $s->state,
-                    $s->country, $s->mobile, $s->email,
-                    $s->created_at, $s->updated_at,
-                ]);
-            }
-
-            fclose($file);
-
-            return $this->success('CSV exported successfully.', [
-                'file_name' => $fileName,
-                'url'       => asset('storage/exports/suppliers/' . $fileName),
+            return response()->json([
+                'status'   => true,
+                'message'  => 'CSV exported successfully!',
+                'file_url' => $result['url'],
             ], 200);
 
         } catch (\Throwable $e) {
-            return $this->serverError($e, 'Supplier export failed');
+            Log::error('Supplier export failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to export suppliers.',
+            ], 500);
         }
     }
 }

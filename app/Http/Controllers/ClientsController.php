@@ -6,6 +6,7 @@ use App\Traits\ApiResponse;
 use App\Models\ClientModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Services\CsvExportService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 
@@ -171,57 +172,114 @@ class ClientsController extends Controller
     }
 
     // EXPORT CSV
-    public function exportExcel(Request $request)
+    // public function exportExcel(Request $request)
+    // {
+    //     try {
+    //         $search = trim((string) $request->input('search', ''));
+
+    //         $q = ClientModel::orderBy('id', 'desc');
+
+    //         if ($search !== '') {
+    //             $q->where('name', 'like', "%{$search}%");
+    //         }
+
+    //         $clients = $q->get();
+
+    //         if ($clients->isEmpty()) {
+    //             return $this->error('No clients found.', 404);
+    //         }
+
+    //         $dir = storage_path('app/public/exports/clients');
+    //         if (!File::exists($dir)) {
+    //             File::makeDirectory($dir, 0755, true);
+    //         }
+
+    //         $fileName = 'clients_' . now()->format('Ymd_His') . '.csv';
+    //         $filePath = $dir . '/' . $fileName;
+
+    //         $file = fopen($filePath, 'w');
+
+    //         fputcsv($file, [
+    //             'ID','Name','Address Line 1','Address Line 2','City',
+    //             'Pincode','GSTIN','State','Country','Mobile','Email',
+    //             'Created At','Updated At'
+    //         ]);
+
+    //         foreach ($clients as $c) {
+    //             fputcsv($file, [
+    //                 $c->id, $c->name, $c->address_line_1, $c->address_line_2,
+    //                 $c->city, $c->pincode, $c->gstin, $c->state,
+    //                 $c->country, $c->mobile, $c->email,
+    //                 $c->created_at, $c->updated_at,
+    //             ]);
+    //         }
+
+    //         fclose($file);
+
+    //         return $this->success('CSV exported successfully.', [
+    //             'file_name' => $fileName,
+    //             'url'       => asset('storage/exports/clients/' . $fileName),
+    //         ], 200);
+
+    //     } catch (\Throwable $e) {
+    //         return $this->serverError($e, 'Client export failed');
+    //     }
+    // }
+    public function exportExcel(Request $request, CsvExportService $csv)
     {
         try {
             $search = trim((string) $request->input('search', ''));
 
             $q = ClientModel::orderBy('id', 'desc');
-
-            if ($search !== '') {
-                $q->where('name', 'like', "%{$search}%");
-            }
+            if ($search !== '') $q->where('name', 'like', "%{$search}%");
 
             $clients = $q->get();
 
             if ($clients->isEmpty()) {
-                return $this->error('No clients found.', 404);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No clients found.',
+                ], 404);
             }
 
-            $dir = storage_path('app/public/exports/clients');
-            if (!File::exists($dir)) {
-                File::makeDirectory($dir, 0755, true);
-            }
+            $headers = ['ID', 'Name', 'Address Line 1', 'Address Line 2', 'City', 'Pincode', 'GSTIN', 'State', 'Country', 'Mobile', 'Email', 'Created At', 'Updated At'];
 
-            $fileName = 'clients_' . now()->format('Ymd_His') . '.csv';
-            $filePath = $dir . '/' . $fileName;
+            $result = $csv->export(
+                'exports/clients',
+                'clients',
+                $headers,
+                $clients,
+                function ($client) {
+                    return [
+                        $client->id,
+                        $client->name,
+                        $client->address_line_1,
+                        $client->address_line_2,
+                        $client->city,
+                        $client->pincode,
+                        $client->gstin,
+                        $client->state,
+                        $client->country,
+                        $client->mobile,
+                        $client->email,
+                        $client->created_at,
+                        $client->updated_at,
+                    ];
+                }
+            );
 
-            $file = fopen($filePath, 'w');
-
-            fputcsv($file, [
-                'ID','Name','Address Line 1','Address Line 2','City',
-                'Pincode','GSTIN','State','Country','Mobile','Email',
-                'Created At','Updated At'
-            ]);
-
-            foreach ($clients as $c) {
-                fputcsv($file, [
-                    $c->id, $c->name, $c->address_line_1, $c->address_line_2,
-                    $c->city, $c->pincode, $c->gstin, $c->state,
-                    $c->country, $c->mobile, $c->email,
-                    $c->created_at, $c->updated_at,
-                ]);
-            }
-
-            fclose($file);
-
-            return $this->success('CSV exported successfully.', [
-                'file_name' => $fileName,
-                'url'       => asset('storage/exports/clients/' . $fileName),
+            return response()->json([
+                'status'   => true,
+                'message'  => 'CSV exported successfully!',
+                'file_url' => $result['url'],
             ], 200);
 
         } catch (\Throwable $e) {
-            return $this->serverError($e, 'Client export failed');
+            Log::error('Client export failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to export clients.',
+            ], 500);
         }
     }
 }
