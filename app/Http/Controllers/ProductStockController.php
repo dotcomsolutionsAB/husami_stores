@@ -193,8 +193,8 @@ class ProductStockController extends Controller
         }
     }
 
-    // ✅ UPDATE (and APPEND tc_attachment files)
-    public function update(Request $request, $id)
+    // ✅ edit (and APPEND tc_attachment files)
+    public function edit(Request $request, $id)
     {
         try {
             $stock = ProductStockModel::find($id);
