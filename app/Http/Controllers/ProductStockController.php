@@ -336,7 +336,7 @@ class ProductStockController extends Controller
         $upload = UploadModel::create([
             'file_name' => $file->getClientOriginalName(),
             'file_ext'  => $ext,
-            'file_url'  => 'storage/' . ltrim($path, '/'),
+            'file_path'  => 'storage/' . ltrim($path, '/'),
             'file_size' => $file->getSize(),
         ]);
 
