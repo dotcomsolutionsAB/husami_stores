@@ -9,6 +9,6 @@ class PickUpCartModel extends Model
     //
     protected $table = 't_pick_up_cart';
     protected $fillable = [
-        'grade_no','item','size','brand','godown','ctn','total_quantity','cart_no','rack_no'
+        'godown','ctn', 'sku', 'product_stock_id', 'total_quantity'
     ];
 }

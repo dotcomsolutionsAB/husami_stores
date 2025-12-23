@@ -13,15 +13,11 @@ return new class extends Migration
     {
         Schema::create('t_pick_up_cart', function (Blueprint $table) {
             $table->id();
-            $table->string('grade_no')->nullable();
-            $table->string('item')->nullable();
-            $table->string('size')->nullable();
-            $table->unsignedBigInteger('brand')->nullable();   // t_brand.id
             $table->unsignedBigInteger('godown')->nullable();  // t_godown.id
             $table->unsignedInteger('ctn')->default(0);
+            $table->string('sku');
+            $table->unsignedInteger('product_stock_id');
             $table->unsignedInteger('total_quantity')->default(0);
-            $table->unsignedInteger('cart_no')->nullable();
-            $table->string('rack_no')->nullable();
             $table->timestamps();
         });
     }

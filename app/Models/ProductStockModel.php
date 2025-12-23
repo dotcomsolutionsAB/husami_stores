@@ -18,6 +18,6 @@ class ProductStockModel extends Model
 
     public function product()
     {
-        return $this->belongsTo(ProductModel::class, 'product_id');
+        return $this->belongsTo(ProductModel::class, 'sku');
     }
 }

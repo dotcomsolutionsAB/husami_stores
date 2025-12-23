@@ -120,7 +120,7 @@ class GodownController extends Controller
             );
 
         } catch (\Throwable $e) {
-            return $this->serverError($e, 'Godown delete failed');
+            return $this->serverError($e, 'Godown deleted failed');
         }
     }
 }

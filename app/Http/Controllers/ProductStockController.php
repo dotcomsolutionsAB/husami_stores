@@ -98,7 +98,7 @@ class ProductStockController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'product_id'    => ['required','integer','exists:t_products,id'],
+                'sku'    => ['required','integer','exists:t_products,t_product_stocks'],
                 'godown_id'     => ['required','integer','exists:t_godown,id'], // if you have t_godown then use exists:t_godown,id
                 'quantity'      => ['required','integer','min:0'],
                 'ctn'           => ['required','integer','min:0'],
@@ -133,7 +133,7 @@ class ProductStockController extends Controller
                 }
 
                 return ProductStockModel::create([
-                    'product_id'    => (int)$v['product_id'],
+                    'sku'           => (int)$v['sku'],
                     'godown_id'     => (int)$v['godown_id'],
                     'quantity'      => (int)$v['quantity'],
                     'ctn'           => (int)$v['ctn'],
@@ -186,16 +186,32 @@ class ProductStockController extends Controller
 
             // JOIN stocks + products
             $q = DB::table('t_product_stocks as s')
-                ->join('t_products as p', 'p.id', '=', 's.product_id')
+                ->join('t_products as p', 'p.id', '=', 's.sku')
                 ->select(
-                    's.*',
+                    // ✅ product first (as you want)
                     'p.sku',
                     'p.grade_no',
                     'p.item_name',
                     'p.size as product_size',
                     'p.brand as product_brand',
                     'p.finish_type',
-                    'p.specifications'
+                    'p.specifications',
+
+                    // ✅ then stock fields
+                    's.id',
+                    's.godown_id',
+                    's.quantity',
+                    's.ctn',
+                    's.batch_no',
+                    's.rack_no',
+                    's.invoice_no',
+                    's.invoice_date',
+                    's.tc_no',
+                    's.tc_date',
+                    's.tc_attachment',
+                    's.remarks',
+                    's.created_at',
+                    's.updated_at'
                 )
                 ->orderBy('s.id', 'desc');
 
@@ -258,7 +274,7 @@ class ProductStockController extends Controller
 
             $validator = Validator::make($request->all(), [
                 // allow updates
-                'product_id'    => ['sometimes','integer','exists:t_products,id'],
+                'sku'    => ['sometimes','integer','exists:t_products,sku'],
                 'godown_id'     => ['sometimes','integer'],
                 'quantity'      => ['sometimes','integer','min:0'],
                 'ctn'           => ['sometimes','integer','min:0'],

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('t_product_stocks', function (Blueprint $table) {
             $table->id();
             // extend later: product_id, godown_id, quantity, etc.
-            $table->unsignedInteger('product_id');   // t_products.id
+            $table->string('sku');   // t_products.sku
             $table->unsignedInteger('godown_id');   // t_godown.id
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('ctn');
