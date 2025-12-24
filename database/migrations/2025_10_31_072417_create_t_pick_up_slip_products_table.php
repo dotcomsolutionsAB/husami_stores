@@ -13,11 +13,13 @@ return new class extends Migration
     {
         Schema::create('t_pick_up_slip_products', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('pick_up_slip');
-            $table->unsignedBigInteger('product');
-            $table->unsignedBigInteger('warehouse')->nullable(); // t_godown.id
-            $table->string('rack_no')->nullable();
-            $table->unsignedInteger('qty')->default(0);
+            $table->unsignedBigInteger('pick_up_slip_id');
+            $table->unsignedBigInteger('product_stock_id');
+            $table->string('sku');
+            $table->unsignedBigInteger('godown')->nullable(); // t_godown.id
+            $table->unsignedInteger('ctn');
+            $table->unsignedInteger('quantity');
+            $table->unsignedInteger('approved')->default(0);
             $table->longText('remarks')->nullable();
             $table->timestamps();
         });

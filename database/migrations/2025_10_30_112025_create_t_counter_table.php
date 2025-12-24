@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('prefix', 32)->nullable();
+            $table->unsignedBigInteger('number');
             $table->string('postfix', 32)->nullable();
             $table->timestamps();
 

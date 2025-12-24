@@ -8,5 +8,5 @@ class CounterModel extends Model
 {
     //
     protected $table = 't_counter';
-    protected $fillable = ['name', 'prefix', 'postfix'];
+    protected $fillable = ['name', 'prefix', 'number', 'postfix'];
 }
