@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('godown_id');   // t_godown.id
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('ctn');
+            $table->unsignedInteger('sent')->default(0);
             $table->string('batch_no');   
             $table->string('rack_no');   
             $table->string('invoice_no');

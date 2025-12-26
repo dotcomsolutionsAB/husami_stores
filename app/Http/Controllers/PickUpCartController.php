@@ -16,6 +16,12 @@ class PickUpCartController extends Controller
     public function create(Request $request)
     {
         try {
+
+            $auth = auth('sanctum')->user();
+            if (!$auth) {
+                return $this->error('Authentication required.', 401);
+            }
+
             $validator = Validator::make($request->all(), [
                 'godown'           => ['required', 'integer', 'exists:t_godown,id'],
                 'ctn'              => ['required', 'integer', 'min:0'],
@@ -27,6 +33,9 @@ class PickUpCartController extends Controller
             if ($validator->fails()) {
                 return $this->validation($validator);
             }
+
+            // ✅ add user_id from logged user
+            $data['user_id'] = $auth->id;
 
             $row = PickUpCartModel::create($validator->validated());
 
@@ -45,6 +54,11 @@ class PickUpCartController extends Controller
     public function fetch(Request $request, $id = null)
     {
         try {
+            $auth = auth('sanctum')->user();
+            if (!$auth) {
+                return $this->error('Authentication required.', 401);
+            }
+
             // SINGLE
             if ($id !== null) {
                 $row = PickUpCartModel::find($id);
@@ -69,10 +83,31 @@ class PickUpCartController extends Controller
             $limit  = (int) ($request->input('limit', 10));
             $offset = (int) ($request->input('offset', 0));
 
-            $q = PickUpCartModel::orderBy('id', 'desc');
+            // ✅ fetch only logged user's cart (recommended)
+            $q = PickUpCartModel::with('user:id,name')
+                ->where('user_id', $auth->id)
+                ->orderBy('id', 'desc');
+
 
             $total = (clone $q)->count();
             $items = $q->skip($offset)->take($limit)->get();
+            $count = $items->count();
+
+            $items = $q->skip($offset)->take($limit)->get()->map(function ($row) {
+                return [
+                    'id'             => $row->id,
+                    'user_id'        => $row->user_id,
+                    'user_name'      => $row->user->name ?? '',
+                    'godown'         => $row->godown,
+                    'ctn'            => $row->ctn,
+                    'sku'            => $row->sku,
+                    'product_stock_id' => $row->product_stock_id,
+                    'total_quantity' => $row->total_quantity,
+                    'created_at'     => $row->created_at,
+                    'updated_at'     => $row->updated_at,
+                ];
+            });
+
             $count = $items->count();
 
             return $this->success('Data fetched successfully', $items, 200, [

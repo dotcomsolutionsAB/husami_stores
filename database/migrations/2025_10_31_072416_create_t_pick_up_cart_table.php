@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('t_pick_up_cart', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();  // users.id
             $table->unsignedBigInteger('godown')->nullable();  // t_godown.id
             $table->unsignedInteger('ctn')->default(0);
             $table->string('sku');
