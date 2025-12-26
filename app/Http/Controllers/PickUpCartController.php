@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Traits\ApiResponse;
 use App\Models\PickUpCartModel;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ProductStockModel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -39,7 +42,60 @@ class PickUpCartController extends Controller
             // ✅ add user_id from logged user
             $data['user_id'] = $auth->id;
 
-            $row = PickUpCartModel::create($data);
+            $row = DB::transaction(function () use ($data) 
+            {
+
+                // Lock stock row (prevents race condition)
+                $stock = ProductStockModel::where('id', $data['product_stock_id'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$stock) {
+                    throw new \Exception('Stock not found.');
+                }
+
+                // ✅ Total stock units = (ctn × quantity) from t_product_stocks
+                $stockCtn = (int)($stock->ctn ?? 0);
+                $stockQty = (int)($stock->quantity ?? 0);
+                $totalUnits = $stockCtn * $stockQty;
+
+                // ✅ sent from t_product_stocks (if column exists)
+                $sent = 0;
+                if (Schema::hasColumn('t_product_stocks', 'sent')) {
+                    $sent = (int)($stock->sent ?? 0);
+                }
+
+                // ✅ sum qty already in cart for this product_stock_id
+                $cartQty = (int) PickUpCartModel::where('product_stock_id', $stock->id)
+                    ->sum('quantity');
+
+                // ✅ sum qty in pickup slips with status = pending
+                // If t_pick_up_slip has status column -> use it
+                $pendingSlipQuery = DB::table('t_pick_up_slip_products as sp')
+                    ->where('sp.product_stock_id', $stock->id);
+
+                if (Schema::hasColumn('t_pick_up_slip', 'status')) {
+                    $pendingSlipQuery
+                        ->join('t_pick_up_slip as s', 's.id', '=', 'sp.pick_up_slip_id')
+                        ->where('s.status', 'pending');
+                } else {
+                    // fallback: treat approved=0 as pending (if approved exists)
+                    if (Schema::hasColumn('t_pick_up_slip_products', 'approved')) {
+                        $pendingSlipQuery->where('sp.approved', 0);
+                    }
+                }
+
+                $pendingSlipQty = (int) $pendingSlipQuery->sum('sp.quantity');
+
+                // ✅ Available Qty
+                $availableQty = $totalUnits - $cartQty - $pendingSlipQty - $sent;
+
+                if ($availableQty < (int)$data['quantity']) {
+                    throw new \Exception('Sorry, Insuffiecient Quantity');
+                }
+
+                return PickUpCartModel::create($data);
+            });
 
             return $this->success(
                 'Pick up cart item created successfully.',
