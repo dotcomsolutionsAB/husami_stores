@@ -167,6 +167,65 @@ class PickUpSlipController extends Controller
     }
 
     // ✅ EDIT (update slip + replace products)
+    // public function edit(Request $request, $id)
+    // {
+    //     try {
+    //         $slip = PickUpSlipModel::with('products')->find($id);
+    //         if (!$slip) return $this->error('Pick up slip not found.', 404);
+
+    //         $validator = Validator::make($request->all(), [
+    //             'client'          => ['required', 'integer', 'exists:t_clients,id'],
+    //             'pick_up_slip_no' => ['required', 'string', 'max:255', 'unique:t_pick_up_slip,pick_up_slip_no,' . $id],
+    //             'status'          => ['required|in:pending,completed'],
+
+    //             'products'                        => ['required', 'array', 'min:1'],
+    //             'products.*.product_stock_id'      => ['required', 'integer', 'exists:t_product_stocks,id'],
+    //             'products.*.sku'                   => ['required', 'string', 'exists:t_products,sku'],
+    //             'products.*.godown'                => ['nullable', 'integer', 'exists:t_godown,id'],
+    //             'products.*.ctn'                   => ['required', 'integer', 'min:0'],
+    //             'products.*.quantity'              => ['required', 'integer', 'min:0'],
+    //             'products.*.approved'              => ['nullable', 'integer', 'min:0'],
+    //             'products.*.remarks'               => ['nullable', 'string'],
+    //         ]);
+
+    //         if ($validator->fails()) return $this->validation($validator);
+
+    //         $v = $validator->validated();
+
+    //         DB::transaction(function () use ($slip, $v) {
+
+    //             $slip->update([
+    //                 'client'          => $v['client'],
+    //                 'pick_up_slip_no' => $v['pick_up_slip_no'],
+    //                 'status'          => $v['status'],
+    //             ]);
+
+    //             // simplest: delete children and recreate
+    //             PickUpSlipProductModel::where('pick_up_slip_id', $slip->id)->delete();
+
+    //             foreach ($v['products'] as $p) {
+    //                 PickUpSlipProductModel::create([
+    //                     'pick_up_slip_id'  => $slip->id,
+    //                     'product_stock_id' => $p['product_stock_id'],
+    //                     'sku'              => $p['sku'],
+    //                     'godown'           => $p['godown'] ?? null,
+    //                     'ctn'              => $p['ctn'],
+    //                     'quantity'         => $p['quantity'],
+    //                     'approved'         => $p['approved'] ?? 0,
+    //                     'remarks'          => $p['remarks'] ?? null,
+    //                 ]);
+    //             }
+    //         });
+
+    //         $slip = PickUpSlipModel::with(['clientRef','products'])->find($slip->id);
+
+    //         return $this->success('Pick up slip updated successfully.', $slip, 200);
+
+    //     } catch (\Throwable $e) {
+    //         return $this->serverError($e, 'Pick up slip update failed');
+    //     }
+    // }
+
     public function edit(Request $request, $id)
     {
         try {
@@ -176,14 +235,14 @@ class PickUpSlipController extends Controller
             $validator = Validator::make($request->all(), [
                 'client'          => ['required', 'integer', 'exists:t_clients,id'],
                 'pick_up_slip_no' => ['required', 'string', 'max:255', 'unique:t_pick_up_slip,pick_up_slip_no,' . $id],
-                'status'          => ['required|in:pending,completed'],
+                'status'          => ['required', 'in:pending,completed'],
 
                 'products'                        => ['required', 'array', 'min:1'],
                 'products.*.product_stock_id'      => ['required', 'integer', 'exists:t_product_stocks,id'],
                 'products.*.sku'                   => ['required', 'string', 'exists:t_products,sku'],
-                'products.*.godown'                => ['nullable', 'integer', 'exists:t_godown,id'],
+                'products.*.godown'                => ['nullable', 'integer'], // you said no need strict checks
                 'products.*.ctn'                   => ['required', 'integer', 'min:0'],
-                'products.*.quantity'              => ['required', 'integer', 'min:0'],
+                'products.*.quantity'              => ['required', 'integer', 'min:1'],
                 'products.*.approved'              => ['nullable', 'integer', 'min:0'],
                 'products.*.remarks'               => ['nullable', 'string'],
             ]);
@@ -194,34 +253,112 @@ class PickUpSlipController extends Controller
 
             DB::transaction(function () use ($slip, $v) {
 
+                // ✅ keep old status for transition check
+                $oldStatus = (string)($slip->status ?? 'pending');
+
+                // ✅ update parent
                 $slip->update([
                     'client'          => $v['client'],
                     'pick_up_slip_no' => $v['pick_up_slip_no'],
                     'status'          => $v['status'],
                 ]);
 
-                // simplest: delete children and recreate
+                // ✅ simplest: delete and recreate children
                 PickUpSlipProductModel::where('pick_up_slip_id', $slip->id)->delete();
 
                 foreach ($v['products'] as $p) {
                     PickUpSlipProductModel::create([
                         'pick_up_slip_id'  => $slip->id,
-                        'product_stock_id' => $p['product_stock_id'],
+                        'product_stock_id' => (int)$p['product_stock_id'],
                         'sku'              => $p['sku'],
                         'godown'           => $p['godown'] ?? null,
-                        'ctn'              => $p['ctn'],
-                        'quantity'         => $p['quantity'],
-                        'approved'         => $p['approved'] ?? 0,
+                        'ctn'              => (int)$p['ctn'],
+                        'quantity'         => (int)$p['quantity'],
+                        'approved'         => (int)($p['approved'] ?? 0),
                         'remarks'          => $p['remarks'] ?? null,
                     ]);
                 }
+
+                // ✅ apply stock split ONLY when changing to completed
+                if ($oldStatus !== 'completed' && $v['status'] === 'completed') {
+
+                    foreach ($v['products'] as $p) {
+
+                        $unitsToSend = (int)$p['quantity'];
+                        if ($unitsToSend <= 0) continue;
+
+                        // 🔒 lock stock row
+                        $stock = ProductStockModel::where('id', (int)$p['product_stock_id'])
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (!$stock) {
+                            throw new \Exception('Stock not found for product_stock_id: ' . (int)$p['product_stock_id']);
+                        }
+
+                        $perCtnQty = (int)($stock->quantity ?? 0); // e.g. 50
+                        $stockCtn  = (int)($stock->ctn ?? 0);
+
+                        if ($perCtnQty <= 0 || $stockCtn <= 0) {
+                            throw new \Exception('Invalid stock carton setup.');
+                        }
+
+                        // ✅ TOTAL units available in this stock row (including sent)
+                        $sent = 0;
+                        if (Schema::hasColumn('t_product_stocks', 'sent')) {
+                            $sent = (int)($stock->sent ?? 0);
+                        }
+
+                        $totalUnits = ($stockCtn * $perCtnQty) - $sent;
+
+                        if ($unitsToSend > $totalUnits) {
+                            throw new \Exception('Sorry, Insuffiecient Quantity');
+                        }
+
+                        // ✅ how many full cartons + remainder
+                        $fullCartons = intdiv($unitsToSend, $perCtnQty);
+                        $remainder   = $unitsToSend % $perCtnQty;
+
+                        // cartons to reduce from original stock:
+                        // - remove full cartons
+                        // - if remainder exists, remove one more carton (we'll create it as partial row)
+                        $ctnToRemove = $fullCartons + ($remainder > 0 ? 1 : 0);
+
+                        if ($ctnToRemove > $stockCtn) {
+                            throw new \Exception('Sorry, Insuffiecient Quantity');
+                        }
+
+                        // ✅ reduce cartons in original row
+                        $stock->ctn = $stockCtn - $ctnToRemove;
+
+                        // keep original sent as-is (don’t force to 50)
+                        // if you want to reset sent when cartons reduce, you can do it here.
+                        $stock->save();
+
+                        // ✅ create a new partial carton stock row if remainder exists
+                        if ($remainder > 0) {
+                            $new = $stock->replicate();   // copy all columns
+                            $new->ctn = 1;
+                            $new->quantity = $perCtnQty;
+
+                            if (Schema::hasColumn('t_product_stocks', 'sent')) {
+                                $new->sent = $remainder; // e.g. 26
+                            }
+
+                            $new->save();
+                        }
+                    }
+                }
             });
 
-            $slip = PickUpSlipModel::with(['clientRef','products'])->find($slip->id);
+            $slip = PickUpSlipModel::with(['clientRef', 'products'])->find($slip->id);
 
             return $this->success('Pick up slip updated successfully.', $slip, 200);
 
         } catch (\Throwable $e) {
+            if ($e->getMessage() === 'Sorry, Insuffiecient Quantity') {
+                return $this->error('Sorry, Insuffiecient Quantity', 422);
+            }
             return $this->serverError($e, 'Pick up slip update failed');
         }
     }

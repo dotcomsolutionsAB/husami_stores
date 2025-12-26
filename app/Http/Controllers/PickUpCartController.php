@@ -17,60 +17,141 @@ class PickUpCartController extends Controller
     use ApiResponse;
 
     // CREATE
+    // public function create(Request $request)
+    // {
+    //     try {
+
+    //         $auth = auth('sanctum')->user();
+    //         if (!$auth) {
+    //             return $this->error('Authentication required.', 401);
+    //         }
+
+    //         $validator = Validator::make($request->all(), [
+    //             'godown'           => ['required', 'integer', 'exists:t_godown,id'],
+    //             'ctn'              => ['required', 'integer', 'min:0'],
+    //             'sku'              => ['required', 'string', 'exists:t_products,sku'],
+    //             'product_stock_id' => ['required', 'integer', 'exists:t_product_stocks,id'],
+    //             'quantity'         => ['required', 'integer', 'min:0'],
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return $this->validation($validator);
+    //         }
+
+    //         $data = $validator->validated();
+    //         // ✅ add user_id from logged user
+    //         $data['user_id'] = $auth->id;
+
+    //         $row = DB::transaction(function () use ($data) 
+    //         {
+
+    //             // Lock stock row (prevents race condition)
+    //             $stock = ProductStockModel::where('id', $data['product_stock_id'])
+    //                 ->lockForUpdate()
+    //                 ->first();
+
+    //             if (!$stock) {
+    //                 throw new \Exception('Stock not found.');
+    //             }
+
+    //             // ✅ Total stock units = (ctn × quantity) from t_product_stocks
+    //             $stockCtn = (int)($stock->ctn ?? 0);
+    //             $stockQty = (int)($stock->quantity ?? 0);
+    //             $totalUnits = $stockCtn * $stockQty;
+
+    //             // ✅ sent from t_product_stocks (if column exists)
+    //             $sent = 0;
+    //             if (Schema::hasColumn('t_product_stocks', 'sent')) {
+    //                 $sent = (int)($stock->sent ?? 0);
+    //             }
+
+    //             // ✅ sum qty already in cart for this product_stock_id
+    //             $cartQty = (int) PickUpCartModel::where('product_stock_id', $stock->id)
+    //                 ->sum('quantity');
+
+    //             // ✅ sum qty in pickup slips with status = pending
+    //             // If t_pick_up_slip has status column -> use it
+    //             $pendingSlipQuery = DB::table('t_pick_up_slip_products as sp')
+    //                 ->where('sp.product_stock_id', $stock->id);
+
+    //             if (Schema::hasColumn('t_pick_up_slip', 'status')) {
+    //                 $pendingSlipQuery
+    //                     ->join('t_pick_up_slip as s', 's.id', '=', 'sp.pick_up_slip_id')
+    //                     ->where('s.status', 'pending');
+    //             } else {
+    //                 // fallback: treat approved=0 as pending (if approved exists)
+    //                 if (Schema::hasColumn('t_pick_up_slip_products', 'approved')) {
+    //                     $pendingSlipQuery->where('sp.approved', 0);
+    //                 }
+    //             }
+
+    //             $pendingSlipQty = (int) $pendingSlipQuery->sum('sp.quantity');
+
+    //             // ✅ Available Qty
+    //             $availableQty = $totalUnits - $cartQty - $pendingSlipQty - $sent;
+
+    //             if ($availableQty < (int)$data['quantity']) {
+    //                 throw new \Exception('Sorry, Insuffiecient Quantity');
+    //             }
+
+    //             return PickUpCartModel::create($data);
+    //         });
+
+    //         return $this->success(
+    //             'Pick up cart item created successfully.',
+    //             $row,
+    //             200
+    //         );
+
+    //     } catch (\Throwable $e) {
+    //         return $this->serverError($e, 'Pick up cart create failed');
+    //     }
+    // }
+
     public function create(Request $request)
     {
         try {
-
             $auth = auth('sanctum')->user();
-            if (!$auth) {
-                return $this->error('Authentication required.', 401);
-            }
+            if (!$auth) return $this->error('Authentication required.', 401);
 
             $validator = Validator::make($request->all(), [
                 'godown'           => ['required', 'integer', 'exists:t_godown,id'],
-                'ctn'              => ['required', 'integer', 'min:0'],
                 'sku'              => ['required', 'string', 'exists:t_products,sku'],
                 'product_stock_id' => ['required', 'integer', 'exists:t_product_stocks,id'],
-                'quantity'         => ['required', 'integer', 'min:0'],
+                'quantity'         => ['required', 'integer', 'min:1'], // units requested
             ]);
 
-            if ($validator->fails()) {
-                return $this->validation($validator);
-            }
+            if ($validator->fails()) return $this->validation($validator);
 
             $data = $validator->validated();
-            // ✅ add user_id from logged user
             $data['user_id'] = $auth->id;
 
-            $row = DB::transaction(function () use ($data) 
-            {
+            $createdRows = DB::transaction(function () use ($data) {
 
-                // Lock stock row (prevents race condition)
                 $stock = ProductStockModel::where('id', $data['product_stock_id'])
                     ->lockForUpdate()
                     ->first();
 
-                if (!$stock) {
-                    throw new \Exception('Stock not found.');
+                if (!$stock) throw new \Exception('Stock not found.');
+
+                $perCtnQty = (int)($stock->quantity ?? 0);   // e.g. 50
+                $stockCtn  = (int)($stock->ctn ?? 0);        // e.g. 4
+
+                if ($perCtnQty <= 0 || $stockCtn <= 0) {
+                    throw new \Exception('Invalid stock carton/quantity setup.');
                 }
 
-                // ✅ Total stock units = (ctn × quantity) from t_product_stocks
-                $stockCtn = (int)($stock->ctn ?? 0);
-                $stockQty = (int)($stock->quantity ?? 0);
-                $totalUnits = $stockCtn * $stockQty;
-
-                // ✅ sent from t_product_stocks (if column exists)
+                // sent units from stock (if column exists)
                 $sent = 0;
                 if (Schema::hasColumn('t_product_stocks', 'sent')) {
                     $sent = (int)($stock->sent ?? 0);
                 }
 
-                // ✅ sum qty already in cart for this product_stock_id
+                $totalUnits = $stockCtn * $perCtnQty;
+
                 $cartQty = (int) PickUpCartModel::where('product_stock_id', $stock->id)
                     ->sum('quantity');
 
-                // ✅ sum qty in pickup slips with status = pending
-                // If t_pick_up_slip has status column -> use it
                 $pendingSlipQuery = DB::table('t_pick_up_slip_products as sp')
                     ->where('sp.product_stock_id', $stock->id);
 
@@ -78,32 +159,44 @@ class PickUpCartController extends Controller
                     $pendingSlipQuery
                         ->join('t_pick_up_slip as s', 's.id', '=', 'sp.pick_up_slip_id')
                         ->where('s.status', 'pending');
-                } else {
-                    // fallback: treat approved=0 as pending (if approved exists)
-                    if (Schema::hasColumn('t_pick_up_slip_products', 'approved')) {
-                        $pendingSlipQuery->where('sp.approved', 0);
-                    }
                 }
 
                 $pendingSlipQty = (int) $pendingSlipQuery->sum('sp.quantity');
 
-                // ✅ Available Qty
                 $availableQty = $totalUnits - $cartQty - $pendingSlipQty - $sent;
 
                 if ($availableQty < (int)$data['quantity']) {
                     throw new \Exception('Sorry, Insuffiecient Quantity');
                 }
 
-                return PickUpCartModel::create($data);
+                // ✅ SPLIT into carton-wise cart rows (each row: ctn=1)
+                $need = (int)$data['quantity'];
+
+                $rows = [];
+                while ($need > 0) {
+                    $take = min($perCtnQty, $need);
+
+                    $rows[] = PickUpCartModel::create([
+                        'user_id'         => $data['user_id'],
+                        'godown'          => $data['godown'],
+                        'sku'             => $data['sku'],
+                        'product_stock_id'=> $data['product_stock_id'],
+                        'ctn'             => 1,          // each row represents 1 carton
+                        'quantity'        => $take,       // units in this carton row
+                    ]);
+
+                    $need -= $take;
+                }
+
+                return collect($rows);
             });
 
-            return $this->success(
-                'Pick up cart item created successfully.',
-                $row,
-                200
-            );
+            return $this->success('Pick up cart item created successfully.', $createdRows, 200);
 
         } catch (\Throwable $e) {
+            if ($e->getMessage() === 'Sorry, Insuffiecient Quantity') {
+                return $this->error('Sorry, Insuffiecient Quantity', 422);
+            }
             return $this->serverError($e, 'Pick up cart create failed');
         }
     }
