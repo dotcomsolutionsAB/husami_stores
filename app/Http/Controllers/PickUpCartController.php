@@ -28,7 +28,7 @@ class PickUpCartController extends Controller
                 'ctn'              => ['required', 'integer', 'min:0'],
                 'sku'              => ['required', 'string', 'exists:t_products,sku'],
                 'product_stock_id' => ['required', 'integer', 'exists:t_product_stocks,id'],
-                'total_quantity'   => ['required', 'numeric', 'min:0'],
+                'quantity'         => ['required', 'integer', 'min:0'],
             ]);
 
             if ($validator->fails()) {
@@ -96,16 +96,16 @@ class PickUpCartController extends Controller
 
             $items = $q->skip($offset)->take($limit)->get()->map(function ($row) {
                 return [
-                    'id'             => $row->id,
-                    'user_id'        => $row->user_id,
-                    'user_name'      => $row->user->name ?? '',
-                    'godown'         => $row->godown,
-                    'ctn'            => $row->ctn,
-                    'sku'            => $row->sku,
+                    'id'               => $row->id,
+                    'user_id'          => $row->user_id,
+                    'user_name'        => $row->user->name ?? '',
+                    'godown'           => $row->godown,
+                    'ctn'              => $row->ctn,
+                    'sku'              => $row->sku,
                     'product_stock_id' => $row->product_stock_id,
-                    'total_quantity' => $row->total_quantity,
-                    'created_at'     => $row->created_at,
-                    'updated_at'     => $row->updated_at,
+                    'quantity'         => $row->quantity,
+                    'created_at'       => $row->created_at,
+                    'updated_at'       => $row->updated_at,
                 ];
             });
 
@@ -140,7 +140,7 @@ class PickUpCartController extends Controller
                 'ctn'              => ['required', 'integer', 'min:0'],
                 'sku'              => ['required', 'string', 'exists:t_products,sku'],
                 'product_stock_id' => ['required', 'integer', 'exists:t_product_stocks,id'],
-                'total_quantity'   => ['required', 'numeric', 'min:0'],
+                'quantity'         => ['required', 'integer', 'min:0'],
             ]);
 
             if ($validator->fails()) {

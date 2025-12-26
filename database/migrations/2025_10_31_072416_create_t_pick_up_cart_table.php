@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('ctn')->default(0);
             $table->string('sku');
             $table->unsignedInteger('product_stock_id');
-            $table->unsignedInteger('total_quantity')->default(0);
+            $table->unsignedInteger('quantity')->default(0);
             $table->timestamps();
         });
     }
