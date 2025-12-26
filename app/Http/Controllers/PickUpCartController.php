@@ -39,7 +39,7 @@ class PickUpCartController extends Controller
             // ✅ add user_id from logged user
             $data['user_id'] = $auth->id;
 
-            $row = PickUpCartModel::create($validator->validated());
+            $row = PickUpCartModel::create($data);
 
             return $this->success(
                 'Pick up cart item created successfully.',
@@ -92,7 +92,7 @@ class PickUpCartController extends Controller
 
 
             $total = (clone $q)->count();
-            $items = $q->skip($offset)->take($limit)->get();
+            $rows = $q->skip($offset)->take($limit)->get();
             $count = $items->count();
 
             $items = $q->skip($offset)->take($limit)->get()->map(function ($row) {
