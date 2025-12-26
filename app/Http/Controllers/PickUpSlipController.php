@@ -49,6 +49,7 @@ class PickUpSlipController extends Controller
                 $slip = PickUpSlipModel::create([
                     'client'          => $v['client'],
                     'pick_up_slip_no' => $v['pick_up_slip_no'],
+                    'status'          => "pending",
                 ]);
 
                 foreach ($v['products'] as $p) {
@@ -175,6 +176,7 @@ class PickUpSlipController extends Controller
             $validator = Validator::make($request->all(), [
                 'client'          => ['required', 'integer', 'exists:t_clients,id'],
                 'pick_up_slip_no' => ['required', 'string', 'max:255', 'unique:t_pick_up_slip,pick_up_slip_no,' . $id],
+                'status'          => ['required|in:pending,completed'],
 
                 'products'                        => ['required', 'array', 'min:1'],
                 'products.*.product_stock_id'      => ['required', 'integer', 'exists:t_product_stocks,id'],
@@ -195,6 +197,7 @@ class PickUpSlipController extends Controller
                 $slip->update([
                     'client'          => $v['client'],
                     'pick_up_slip_no' => $v['pick_up_slip_no'],
+                    'status'          => $v['status'],
                 ]);
 
                 // simplest: delete children and recreate
