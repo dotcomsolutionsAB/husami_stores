@@ -93,7 +93,6 @@ class PickUpCartController extends Controller
 
             $total = (clone $q)->count();
             $rows = $q->skip($offset)->take($limit)->get();
-            $count = $items->count();
 
             $items = $q->skip($offset)->take($limit)->get()->map(function ($row) {
                 return [
