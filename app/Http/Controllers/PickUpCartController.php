@@ -35,6 +35,7 @@ class PickUpCartController extends Controller
                 return $this->validation($validator);
             }
 
+            $data = $validator->validated();
             // ✅ add user_id from logged user
             $data['user_id'] = $auth->id;
 
