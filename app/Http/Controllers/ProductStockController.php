@@ -186,7 +186,7 @@ class ProductStockController extends Controller
 
             // JOIN stocks + products
             $q = DB::table('t_product_stocks as s')
-                ->join('t_products as p', 'p.id', '=', 's.sku')
+                ->join('t_products as p', 'p.sku', '=', 's.sku')
                 ->select(
                     // ✅ product first (as you want)
                     'p.sku',
