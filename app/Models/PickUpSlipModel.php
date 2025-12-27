@@ -8,7 +8,7 @@ class PickUpSlipModel extends Model
 {
     //
     protected $table = 't_pick_up_slip';
-    protected $fillable = ['client','pick_up_slip_no'];
+    protected $fillable = ['client','pick_up_slip_no','status'];
 
     public function products()
     {
