@@ -56,7 +56,7 @@ class PickUpSlipController extends Controller
                     throw new \Exception("Counter 'pick_up_slip' not found.");
                 }
 
-                 $expectedSlipNo = $counter->formatted; // prefix + padded number + postfix
+                $expectedSlipNo = $counter->formatted; // prefix + padded number + postfix
                 if (trim((string)$v['pick_up_slip_no']) !== $expectedSlipNo) {
                     throw new \Exception("Invalid pick_up_slip_no. Expected: {$expectedSlipNo}");
                 }
