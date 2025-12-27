@@ -324,9 +324,7 @@ class PickUpSlipController extends Controller
 
                         // ✅ TOTAL units available in this stock row (including sent)
                         $sent = 0;
-                        if (Schema::hasColumn('t_product_stocks', 'sent')) {
-                            $sent = (int)($stock->sent ?? 0);
-                        }
+                        $sent = (int)($stock->sent ?? 0);
 
                         $totalUnits = ($stockCtn * $perCtnQty) - $sent;
 
@@ -360,9 +358,7 @@ class PickUpSlipController extends Controller
                             $new->ctn = 1;
                             $new->quantity = $perCtnQty;
 
-                            if (Schema::hasColumn('t_product_stocks', 'sent')) {
-                                $new->sent = $remainder; // e.g. 26
-                            }
+                            $new->sent = $remainder;
 
                             $new->save();
                         }
