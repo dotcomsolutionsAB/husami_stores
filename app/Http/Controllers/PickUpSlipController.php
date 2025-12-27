@@ -80,10 +80,9 @@ class PickUpSlipController extends Controller
                     ]);
                 }
 
-                 $expectedSlipNo = $counter->formatted; // prefix + padded number + postfix
-                if (trim((string)$v['pick_up_slip_no']) !== $expectedSlipNo) {
-                    throw new \Exception("Invalid pick_up_slip_no. Expected: {$expectedSlipNo}");
-                }
+                // ✅ Increment counter AFTER slip created successfully
+                $counter->number = (int)$counter->number + 1;
+                $counter->save();
 
                 return $slip;
             });
