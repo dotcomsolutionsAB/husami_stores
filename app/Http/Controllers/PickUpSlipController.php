@@ -46,6 +46,20 @@ class PickUpSlipController extends Controller
 
             $slip = DB::transaction(function () use ($v) {
 
+                // ✅ Lock counter row (prevents race conditions)
+                $counter = CounterModel::where('name', 'pick_up_slip')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$counter) {
+                    throw new \Exception("Counter 'pick_up_slip' not found.");
+                }
+
+                 $expectedSlipNo = $counter->formatted; // prefix + padded number + postfix
+                if (trim((string)$v['pick_up_slip_no']) !== $expectedSlipNo) {
+                    throw new \Exception("Invalid pick_up_slip_no. Expected: {$expectedSlipNo}");
+                }
+
                 $slip = PickUpSlipModel::create([
                     'client'          => $v['client'],
                     'pick_up_slip_no' => $v['pick_up_slip_no'],
@@ -63,6 +77,11 @@ class PickUpSlipController extends Controller
                         'approved'         => $p['approved'] ?? 0,
                         'remarks'          => $p['remarks'] ?? null,
                     ]);
+                }
+
+                 $expectedSlipNo = $counter->formatted; // prefix + padded number + postfix
+                if (trim((string)$v['pick_up_slip_no']) !== $expectedSlipNo) {
+                    throw new \Exception("Invalid pick_up_slip_no. Expected: {$expectedSlipNo}");
                 }
 
                 return $slip;
