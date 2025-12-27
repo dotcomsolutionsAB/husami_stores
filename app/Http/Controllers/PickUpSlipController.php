@@ -13,6 +13,7 @@ use App\Models\ProductStockModel;
 use App\Models\ProductModel;   // your t_products model
 use App\Models\GodownModel;    // your t_godown model
 use App\Models\ClientModel;
+use App\Models\CounterModel;
 
 class PickUpSlipController extends Controller
 {
