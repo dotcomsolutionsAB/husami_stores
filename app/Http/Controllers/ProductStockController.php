@@ -276,7 +276,7 @@ class ProductStockController extends Controller
 
             $validator = Validator::make($request->all(), [
                 // allow updates
-                'sku'    => ['sometimes','integer','exists:t_products,sku'],
+                'sku'           => ['sometimes','integer','exists:t_products,sku'],
                 'godown_id'     => ['sometimes','integer'],
                 'quantity'      => ['sometimes','integer','min:0'],
                 'ctn'           => ['sometimes','integer','min:0'],
