@@ -98,7 +98,7 @@ class ProductStockController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'sku'    => ['required','integer','exists:t_products,t_product_stocks'],
+                'sku'           => ['required','string','exists:t_products,sku'],
                 'godown_id'     => ['required','integer','exists:t_godown,id'], // if you have t_godown then use exists:t_godown,id
                 'quantity'      => ['required','integer','min:0'],
                 'ctn'           => ['required','integer','min:0'],
