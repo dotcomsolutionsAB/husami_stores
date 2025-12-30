@@ -115,7 +115,6 @@ class PickUpCartController extends Controller
             if (!$auth) return $this->error('Authentication required.', 401);
 
             $validator = Validator::make($request->all(), [
-                'godown'           => ['required', 'integer', 'exists:t_godown,id'],
                 'sku'              => ['required', 'string', 'exists:t_products,sku'],
                 'product_stock_id' => ['required', 'integer', 'exists:t_product_stocks,id'],
                 'quantity'         => ['required', 'integer', 'min:1'], // units requested
@@ -178,7 +177,6 @@ class PickUpCartController extends Controller
 
                     $rows[] = PickUpCartModel::create([
                         'user_id'         => $data['user_id'],
-                        'godown'          => $data['godown'],
                         'sku'             => $data['sku'],
                         'product_stock_id'=> $data['product_stock_id'],
                         'ctn'             => 1,          // each row represents 1 carton
@@ -248,7 +246,6 @@ class PickUpCartController extends Controller
                     'id'               => $row->id,
                     'user_id'          => $row->user_id,
                     'user_name'        => $row->user->name ?? '',
-                    'godown'           => $row->godown,
                     'ctn'              => $row->ctn,
                     'sku'              => $row->sku,
                     'product_stock_id' => $row->product_stock_id,
@@ -285,7 +282,6 @@ class PickUpCartController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'godown'           => ['required', 'integer', 'exists:t_godown,id'],
                 'ctn'              => ['required', 'integer', 'min:0'],
                 'sku'              => ['required', 'string', 'exists:t_products,sku'],
                 'product_stock_id' => ['required', 'integer', 'exists:t_product_stocks,id'],

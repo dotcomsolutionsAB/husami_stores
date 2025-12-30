@@ -10,7 +10,7 @@ class PickUpCartModel extends Model
     //
     protected $table = 't_pick_up_cart';
     protected $fillable = [
-        'user_id','godown','ctn', 'sku', 'product_stock_id', 'quantity'
+        'user_id','ctn', 'sku', 'product_stock_id', 'quantity'
     ];
 
     public function user(): BelongsTo
