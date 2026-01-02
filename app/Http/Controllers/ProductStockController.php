@@ -6,6 +6,7 @@ use App\Traits\ApiResponse;
 use App\Models\ProductStockModel;
 use App\Models\ProductModel;
 use App\Models\UploadModel;
+use App\Models\BrandModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -330,7 +331,6 @@ class ProductStockController extends Controller
                 'updated_at' => $it->updated_at,
             ];
         })->values();
-
 
             return $this->success('Data fetched successfully', $items, 200, [
                 'pagination' => [
