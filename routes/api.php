@@ -282,5 +282,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::get('/items', [MasterDataController::class, 'items']);
         Route::get('/sizes', [MasterDataController::class, 'sizes']);
         Route::get('/racks', [MasterDataController::class, 'racks']);
+        Route::get('/finishes', [MasterDataController::class, 'finishes']);
+        Route::get('/specifications', [MasterDataController::class, 'specifications']);
     });
 });

@@ -62,6 +62,30 @@ return new class extends Migration
               WHERE rack_no IS NOT NULL AND TRIM(rack_no) <> ''
             ) x
         ");
+
+        DB::statement("
+            CREATE OR REPLACE VIEW v_finishes AS
+            SELECT
+              DENSE_RANK() OVER (ORDER BY name) AS id,
+              name
+            FROM (
+              SELECT DISTINCT TRIM(finish_type) AS name
+              FROM t_products
+              WHERE finish_type IS NOT NULL AND TRIM(finish_type) <> ''
+            ) x
+        ");
+
+        DB::statement("
+            CREATE OR REPLACE VIEW v_specifications AS
+            SELECT
+              DENSE_RANK() OVER (ORDER BY name) AS id,
+              name
+            FROM (
+              SELECT DISTINCT TRIM(specifications) AS name
+              FROM t_products
+              WHERE specifications IS NOT NULL AND TRIM(specifications) <> ''
+            ) x
+        ");
     }
 
     /**
@@ -74,5 +98,7 @@ return new class extends Migration
         DB::statement("DROP VIEW IF EXISTS v_items");
         DB::statement("DROP VIEW IF EXISTS v_sizes");
         DB::statement("DROP VIEW IF EXISTS v_racks");
+        DB::statement("DROP VIEW IF EXISTS v_finishes");
+        DB::statement("DROP VIEW IF EXISTS v_specifications");
     }
 };

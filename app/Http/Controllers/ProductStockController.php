@@ -6,6 +6,7 @@ use App\Traits\ApiResponse;
 use App\Models\ProductStockModel;
 use App\Models\ProductModel;
 use App\Models\UploadModel;
+use App\Models\GodownModel;
 use App\Models\BrandModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -134,7 +135,7 @@ class ProductStockController extends Controller
                 }
 
                 return ProductStockModel::create([
-                    'sku'           => (int)$v['sku'],
+                    'sku'           => (string)$v['sku'],
                     'godown_id'     => (int)$v['godown_id'],
                     'quantity'      => (int)$v['quantity'],
                     'ctn'           => (int)$v['ctn'],
@@ -355,7 +356,7 @@ class ProductStockController extends Controller
 
             $validator = Validator::make($request->all(), [
                 // allow updates
-                'sku'           => ['sometimes','integer','exists:t_products,sku'],
+                'sku'           => ['sometimes','string','exists:t_products,sku'],
                 'godown_id'     => ['sometimes','integer'],
                 'quantity'      => ['sometimes','integer','min:0'],
                 'ctn'           => ['sometimes','integer','min:0'],

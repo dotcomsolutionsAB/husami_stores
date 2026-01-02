@@ -76,4 +76,22 @@ class MasterDataController extends Controller
             return $this->serverError($e, 'Racks fetch failed');
         }
     }
+
+    public function finishes(Request $request)
+    {
+        try {
+            return $this->fetchFromView($request, 'v_finishes');
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Finishes fetch failed');
+        }
+    }
+
+    public function specifications(Request $request)
+    {
+        try {
+            return $this->fetchFromView($request, 'v_specifications');
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Specifications fetch failed');
+        }
+    }
 }
