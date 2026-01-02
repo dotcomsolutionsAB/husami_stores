@@ -195,12 +195,13 @@ class ProductStockController extends Controller
                     'tc_no'     => $row->tc_no,
                     'tc_date'   => $row->tc_date,
                     'tc_attachment' => $row->tc_attachment,
+                    'tc_attachment_paths' => $row->tc_attachment_paths ?? [],
                     'remarks'   => $row->remarks,
                     'created_at'=> $row->created_at,
                     'updated_at'=> $row->updated_at,
                 ];
 
-                return $this->success('Data fetched successfully', $row, 200);
+                return $this->success('Data fetched successfully', $data, 200);
             }
 
             // LIST + pagination
@@ -333,7 +334,7 @@ class ProductStockController extends Controller
             ];
         })->values();
 
-            return $this->success('Data fetched successfully', $items, 200, [
+            return $this->success('Data fetched successfully', $data, 200, [
                 'pagination' => [
                     'limit'  => $limit,
                     'offset' => $offset,
