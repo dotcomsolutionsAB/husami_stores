@@ -13,6 +13,11 @@ class BrandModel extends Model
 
     public function logoRef(): BelongsTo
     {
-        return $this->belongsTo(UploadModel::class, 'logo');
+        return $this->belongsTo(UploadModel::class, 'logo', 'id');
     }
+
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
 }

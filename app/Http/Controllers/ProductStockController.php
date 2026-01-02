@@ -162,9 +162,41 @@ class ProductStockController extends Controller
         try {
             // SINGLE
             if ($id !== null) {
-                $row = ProductStockModel::with('product')->find($id);
+                $row = ProductStockModel::with([
+                    'product.brandRef.logoRef',
+                    'godown'
+                ])->find($id);
+
                 if (!$row) return $this->error('Record not found.', 404);
+
                 $row = $this->mapTcAttachmentsToPaths($row);
+
+                // transform response keys
+                $data = [
+                    'sku'            => $row->sku,
+                    'grade_no'       => optional($row->product)->grade_no,
+                    'item_name'      => optional($row->product)->item_name,
+                    'product_size'   => optional($row->product)->size,
+                    'brand'          => optional($row->product)->brandRef, // full object
+                    'finish_type'    => optional($row->product)->finish_type,
+                    'specifications' => optional($row->product)->specifications,
+
+                    'id'        => $row->id,
+                    'godown'    => $row->godown ? ['id' => (string)$row->godown->id, 'name' => (string)$row->godown->name] : null,
+                    'quantity'  => $row->quantity,
+                    'ctn'       => $row->ctn,
+                    'sent'      => $row->sent,
+                    'batch_no'  => $row->batch_no,
+                    'rack_no'   => $row->rack_no,
+                    'invoice_no'=> $row->invoice_no,
+                    'invoice_date' => $row->invoice_date,
+                    'tc_no'     => $row->tc_no,
+                    'tc_date'   => $row->tc_date,
+                    'tc_attachment' => $row->tc_attachment,
+                    'remarks'   => $row->remarks,
+                    'created_at'=> $row->created_at,
+                    'updated_at'=> $row->updated_at,
+                ];
 
                 return $this->success('Data fetched successfully', $row, 200);
             }
@@ -194,7 +226,7 @@ class ProductStockController extends Controller
                     'p.grade_no',
                     'p.item_name',
                     'p.size as product_size',
-                    'p.brand as product_brand',
+                    'p.brand as brand_id',
                     'p.finish_type',
                     'p.specifications',
 
@@ -252,6 +284,53 @@ class ProductStockController extends Controller
             $items = $q->skip($offset)->take($limit)->get();
             $count = $items->count();
             $items = $this->mapTcAttachmentsToPaths($items);
+
+            // ✅ Fetch brand objects in batch
+        $brandIds = collect($items)->pluck('brand_id')->filter()->unique()->values()->all();
+        $brands = empty($brandIds)
+            ? collect()
+            : BrandModel::with('logoRef')->whereIn('id', $brandIds)->get()->keyBy('id');
+
+        // ✅ Fetch godown objects in batch
+        $godownIds = collect($items)->pluck('godown_id')->filter()->unique()->values()->all();
+        $godowns = empty($godownIds)
+            ? collect()
+            : GodownModel::whereIn('id', $godownIds)->get()->keyBy('id');
+
+        // ✅ Transform: godown_id -> godown object, brand_id -> brand object
+        $data = collect($items)->map(function ($it) use ($brands, $godowns) {
+            $godown = $godowns->get($it->godown_id);
+            $brand  = $brands->get($it->brand_id);
+
+            return [
+                // product first
+                'sku'            => (string)$it->sku,
+                'grade_no'       => (string)($it->grade_no ?? ''),
+                'item_name'      => (string)($it->item_name ?? ''),
+                'product_size'   => (string)($it->product_size ?? ''),
+                'brand'          => $brand ?: null,   // ✅ full object
+                'finish_type'    => (string)($it->finish_type ?? ''),
+                'specifications' => (string)($it->specifications ?? ''),
+
+                // stock fields
+                'id'         => (string)$it->id,
+                'godown'     => $godown ? ['id' => (string)$godown->id, 'name' => (string)$godown->name] : null,
+                'quantity'   => (string)$it->quantity,
+                'ctn'        => (string)$it->ctn,
+                'sent'       => (string)$it->sent,
+                'batch_no'   => (string)($it->batch_no ?? ''),
+                'rack_no'    => (string)($it->rack_no ?? ''),
+                'invoice_no' => (string)($it->invoice_no ?? ''),
+                'invoice_date' => $it->invoice_date,
+                'tc_no'      => (string)($it->tc_no ?? ''),
+                'tc_date'    => $it->tc_date,
+                'tc_attachment' => $it->tc_attachment,
+                'remarks'    => (string)($it->remarks ?? ''),
+                'created_at' => $it->created_at,
+                'updated_at' => $it->updated_at,
+            ];
+        })->values();
+
 
             return $this->success('Data fetched successfully', $items, 200, [
                 'pagination' => [

@@ -16,4 +16,10 @@ class ProductModel extends Model
         'list_price' => 'decimal:2',
         'tax' => 'decimal:2',
     ];
+
+    public function brandRef()
+    {
+        // assuming t_products.brand stores t_brand.id
+        return $this->belongsTo(BrandModel::class, 'brand', 'id');
+    }
 }
