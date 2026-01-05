@@ -415,40 +415,56 @@ class ProductStockController extends Controller
             $sku = (string) $distinctSkus->first();
 
             // ✅ 1) Brand totals (no objects)
-            $brandTotals = (clone $q)
+            // $brandTotals = (clone $q)
+            //     ->select(
+            //         's.sku',
+            //         'p.brand as brand',
+            //         DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
+            //     )
+            //     ->groupBy('s.sku', 'p.brand')
+            //     ->orderBy('p.brand', 'asc')
+            //     ->get()
+            //     ->map(function ($r) {
+            //         return [
+            //             'brand'     => $r->brand === null ? null : (string)$r->brand,  // ✅ just value
+            //             'total_qty' => (int) ($r->total_qty ?? 0),
+            //         ];
+            //     })
+            //     ->values();
+            $brandTotalQty = (clone $q)
                 ->select(
-                    's.sku',
-                    'p.brand as brand',
+                    'p.brand',
                     DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
                 )
-                ->groupBy('s.sku', 'p.brand')
-                ->orderBy('p.brand', 'asc')
+                ->groupBy('p.brand')
                 ->get()
-                ->map(function ($r) {
-                    return [
-                        'brand'     => $r->brand === null ? null : (string)$r->brand,  // ✅ just value
-                        'total_qty' => (int) ($r->total_qty ?? 0),
-                    ];
-                })
-                ->values();
+                ->sum('total_qty');
 
             // ✅ 2) Finish totals (no objects)
-            $finishTotals = (clone $q)
+            // $finishTotals = (clone $q)
+            //     ->select(
+            //         's.sku',
+            //         'p.finish_type',
+            //         DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
+            //     )
+            //     ->groupBy('s.sku', 'p.finish_type')
+            //     ->orderBy('p.finish_type', 'asc')
+            //     ->get()
+            //     ->map(function ($r) {
+            //         return [
+            //             'finish_type' => (string) ($r->finish_type ?? ''),
+            //             'total_qty'   => (int) ($r->total_qty ?? 0),
+            //         ];
+            //     })
+            //     ->values();
+            $finishTotalQty = (clone $q)
                 ->select(
-                    's.sku',
                     'p.finish_type',
                     DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
                 )
-                ->groupBy('s.sku', 'p.finish_type')
-                ->orderBy('p.finish_type', 'asc')
+                ->groupBy('p.finish_type')
                 ->get()
-                ->map(function ($r) {
-                    return [
-                        'finish_type' => (string) ($r->finish_type ?? ''),
-                        'total_qty'   => (int) ($r->total_qty ?? 0),
-                    ];
-                })
-                ->values();
+                ->sum('total_qty');
 
             return $this->success('Data fetched successfully', [
                 'sku'           => $sku,
