@@ -356,4 +356,81 @@ class PickUpCartController extends Controller
             return $this->serverError($e, 'Pick up cart delete failed');
         }
     }
+
+    // merged-sku
+    public function fetchMergedBySku(Request $request)
+    {
+        try {
+            $auth = auth('sanctum')->user();
+            if (!$auth) {
+                return $this->error('Authentication required.', 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'limit'  => ['nullable', 'integer', 'min:1', 'max:200'],
+                'offset' => ['nullable', 'integer', 'min:0'],
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validation($validator);
+            }
+
+            $limit  = (int) ($request->input('limit', 10));
+            $offset = (int) ($request->input('offset', 0));
+
+            // ✅ get full cart rows for this user with needed relations
+            $rows = PickUpCartModel::with([
+                'productStock.product.brandRef.logoRef',
+            ])
+            ->where('user_id', $auth->id)
+            ->orderBy('id', 'desc')
+            ->get();
+
+            // ✅ group by SKU and merge
+            $merged = $rows
+                ->groupBy(function ($row) {
+                    return $row->productStock?->sku ?? $row->sku ?? '';
+                })
+                ->map(function ($group, $sku) {
+
+                    $first   = $group->first();
+                    $stock   = $first->productStock;
+                    $product = $stock?->product;
+                    $brand   = $product?->brandRef;
+
+                    $totalQty = $group->sum(function ($r) {
+                        $ctn = (int) ($r->ctn ?? 0);
+                        $qty = (int) ($r->quantity ?? 0);
+                        return $ctn * $qty;
+                    });
+
+                    return [
+                        'sku'       => (string) ($sku ?? ''),
+                        'gr'        => (string) ($product->grade_no ?? ''),
+                        'item'      => (string) ($product->item_name ?? ''),
+                        'size'      => (string) ($product->size ?? ''),
+                        'brand'     => $brand ?: null,
+                        'total_qty' => (int) $totalQty,
+                    ];
+                })
+                ->values();
+
+            // ✅ pagination after merge
+            $total = $merged->count();
+            $paged = $merged->slice($offset, $limit)->values();
+            $count = $paged->count();
+
+            return $this->success('Data fetched successfully', $paged, 200, [
+                'pagination' => [
+                    'limit'  => $limit,
+                    'offset' => $offset,
+                    'count'  => $count,
+                    'total'  => $total,
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Pick up cart merged fetch failed');
+        }
+    }
 }

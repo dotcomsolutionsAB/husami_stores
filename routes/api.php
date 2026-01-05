@@ -174,6 +174,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/retrieve/{id?}', [PickUpCartController::class, 'fetch']);
         Route::post('/update/{id}', [PickUpCartController::class, 'edit']);
         Route::delete('/delete/{id}', [PickUpCartController::class, 'delete']);
+        Route::post('/retrieve_consolidated', [PickUpCartController::class, 'fetchMergedBySku']);
     });
 
     // pickup-slip route
