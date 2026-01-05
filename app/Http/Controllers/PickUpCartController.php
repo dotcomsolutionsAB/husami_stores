@@ -388,9 +388,7 @@ class PickUpCartController extends Controller
 
             // ✅ group by SKU and merge
             $merged = $rows
-                ->groupBy(function ($row) {
-                    return $row->productStock?->sku ?? $row->sku ?? '';
-                })
+                ->groupBy(fn($row) => (string) ($row->sku ?? ''))
                 ->map(function ($group, $sku) {
 
                     $first   = $group->first();
