@@ -399,9 +399,7 @@ class PickUpCartController extends Controller
                     $brand   = $product?->brandRef;
 
                     $totalQty = $group->sum(function ($r) {
-                        $ctn = (int) ($r->ctn ?? 0);
-                        $qty = (int) ($r->quantity ?? 0);
-                        return $ctn * $qty;
+                        return ((int)($r->ctn ?? 0)) * ((int)($r->quantity ?? 0));
                     });
 
                     return [
