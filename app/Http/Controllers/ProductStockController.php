@@ -348,6 +348,110 @@ class ProductStockController extends Controller
         }
     }
 
+    // fetchTotalsByBrandFinish
+    public function fetchTotalsByBrandFinish(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'godown'   => ['nullable', 'string'],   // can be "1" or "1,2,3"
+                'grade'    => ['nullable', 'string'],
+                'item'     => ['nullable', 'string'],
+                'size'     => ['nullable', 'string'],
+                'rack_no'  => ['nullable', 'string'],
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validation($validator);
+            }
+
+            $godown  = trim((string) $request->input('godown', ''));
+            $grade   = trim((string) $request->input('grade', ''));
+            $item    = trim((string) $request->input('item', ''));
+            $size    = trim((string) $request->input('size', ''));
+            $rackNo  = trim((string) $request->input('rack_no', ''));
+
+            // Base query: stocks + products
+            $q = DB::table('t_product_stocks as s')
+                ->join('t_products as p', 'p.sku', '=', 's.sku');
+
+            // ✅ Filters (only these fields)
+            if ($godown !== '') {
+                // allow comma separated ids
+                $ids = array_values(array_filter(array_map('trim', explode(',', $godown))));
+                if (count($ids) > 1) {
+                    $q->whereIn('s.godown_id', $ids);
+                } else {
+                    $q->where('s.godown_id', $ids[0]);
+                }
+            }
+
+            if ($grade !== '') {
+                $q->where('p.grade_no', 'like', "%{$grade}%");
+            }
+
+            if ($item !== '') {
+                $q->where('p.item_name', 'like', "%{$item}%");
+            }
+
+            if ($size !== '') {
+                $q->where('p.size', 'like', "%{$size}%");
+            }
+
+            if ($rackNo !== '') {
+                $q->where('s.rack_no', 'like', "%{$rackNo}%");
+            }
+
+            // ✅ Check distinct SKU count after filters
+            $distinctSkus = (clone $q)->distinct()->pluck('s.sku')->values();
+
+            if ($distinctSkus->count() === 0) {
+                return $this->success('No data found for given filters', [], 200);
+            }
+
+            if ($distinctSkus->count() > 1) {
+                return $this->error('Kindly filter a single product to view totals', 401);
+            }
+
+            $sku = (string) $distinctSkus->first();
+
+            // ✅ Group by brand + finish_type, total = SUM(ctn*quantity) from t_product_stocks
+            $grouped = (clone $q)
+                ->select(
+                    's.sku',
+                    'p.brand as brand_id',
+                    'p.finish_type',
+                    DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
+                )
+                ->groupBy('s.sku', 'p.brand', 'p.finish_type')
+                ->orderBy('p.brand', 'asc')
+                ->get();
+
+            // ✅ brand objects in batch (optional but recommended like your other APIs)
+            $brandIds = $grouped->pluck('brand_id')->filter()->unique()->values()->all();
+
+            $brands = empty($brandIds)
+                ? collect()
+                : \App\Models\BrandModel::with('logoRef')->whereIn('id', $brandIds)->get()->keyBy('id');
+
+            $data = $grouped->map(function ($r) use ($brands) {
+                return [
+                    'sku'         => (string) $r->sku,
+                    'brand'       => $r->brand_id ? ($brands->get($r->brand_id) ?: null) : null,
+                    'finish_type' => (string) ($r->finish_type ?? ''),
+                    'total_qty'   => (int) ($r->total_qty ?? 0),
+                ];
+            })->values();
+
+            return $this->success('Data fetched successfully', [
+                'sku'   => $sku,
+                'rows'  => $data,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Totals fetch failed');
+        }
+    }
+
     // ✅ edit (and APPEND tc_attachment files)
     public function edit(Request $request, $id)
     {
