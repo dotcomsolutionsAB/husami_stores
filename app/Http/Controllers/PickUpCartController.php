@@ -382,7 +382,7 @@ class PickUpCartController extends Controller
             $rows = PickUpCartModel::with([
                 'productStock.product.brandRef.logoRef',
             ])
-            ->where('user_id', $auth->id)
+            // ->where('user_id', $auth->id)
             ->orderBy('id', 'desc')
             ->get();
 
