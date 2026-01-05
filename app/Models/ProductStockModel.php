@@ -18,7 +18,7 @@ class ProductStockModel extends Model
 
     public function product()
     {
-        return $this->belongsTo(ProductModel::class, 'sku');
+        return $this->belongsTo(ProductModel::class, 'sku', 'sku');
     }
 
     public function godown()
