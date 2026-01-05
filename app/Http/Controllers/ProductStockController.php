@@ -468,8 +468,8 @@ class ProductStockController extends Controller
 
             return $this->success('Data fetched successfully', [
                 'sku'           => $sku,
-                'brand_totals'  => $brandTotals,
-                'finish_totals' => $finishTotals,
+                'brand_totals'  => (int) $brandTotalQty,
+                'finish_totals' => (int) $finishTotalQty,
             ], 200);
 
         } catch (\Throwable $e) {
