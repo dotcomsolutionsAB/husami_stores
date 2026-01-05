@@ -210,7 +210,11 @@ class PickUpCartController extends Controller
 
             // SINGLE
             if ($id !== null) {
-                $row = PickUpCartModel::find($id);
+                $row = PickUpCartModel::with([
+                    'user:id,name',
+                    'productStock.godown:id,name',
+                    'productStock.product.brandRef.logoRef', // brand + logo
+                ])->find($id);
 
                 if (!$row) {
                     return $this->error('Record not found.', 404);
@@ -233,27 +237,52 @@ class PickUpCartController extends Controller
             $offset = (int) ($request->input('offset', 0));
 
             // ✅ fetch only logged user's cart (recommended)
-            $q = PickUpCartModel::with('user:id,name')
-                ->where('user_id', $auth->id)
-                ->orderBy('id', 'desc');
+            $q = PickUpCartModel::with([
+                'user:id,name',
+                'productStock.godown:id,name',
+                'productStock.product.brandRef.logoRef',
+            ])
+            ->where('user_id', $auth->id)
+            ->orderBy('id', 'desc');
 
 
             $total = (clone $q)->count();
             $rows = $q->skip($offset)->take($limit)->get();
 
-            $items = $q->skip($offset)->take($limit)->get()->map(function ($row) {
-                return [
-                    'id'               => $row->id,
-                    'user_id'          => $row->user_id,
-                    'user_name'        => $row->user->name ?? '',
-                    'ctn'              => $row->ctn,
-                    'sku'              => $row->sku,
-                    'product_stock_id' => $row->product_stock_id,
-                    'quantity'         => $row->quantity,
-                    'created_at'       => $row->created_at,
-                    'updated_at'       => $row->updated_at,
-                ];
-            });
+            $items = $rows->map(function ($row) {
+
+            $stock   = $row->productStock;         // t_product_stocks
+            $product = $stock?->product;           // t_products
+            $brand   = $product?->brandRef;        // t_brand (full object)
+            $godown  = $stock?->godown;
+
+            // Use cart qty/ctn (recommended) OR stock qty/ctn — see note below.
+            $qty = (int) ($row->quantity ?? 0);
+            $ctn = (int) ($row->ctn ?? 0);
+
+            return [
+                // existing keys (keep)
+                'id'               => $row->id,
+                'user_id'          => $row->user_id,
+                'user_name'        => $row->user->name ?? '',
+                'product_stock_id' => $row->product_stock_id,
+                'created_at'       => $row->created_at,
+                'updated_at'       => $row->updated_at,
+
+                // ✅ NEW keys you asked (with table refs)
+                'sku'       => (string) ($stock->sku ?? $row->sku ?? ''),        // t_product_stocks
+                'gr'        => (string) ($product->grade_no ?? ''),              // t_products
+                'item'      => (string) ($product->item_name ?? ''),             // t_products
+                'size'      => (string) ($product->size ?? ''),                  // t_products
+                'brand'     => $brand ?: null,                                   // t_products -> brandRef full object
+
+                'godown'    => $godown ? ['id' => (string)$godown->id, 'name' => (string)$godown->name] : null, // t_product_stocks
+                'qty'       => $qty,                                             // (cart qty recommended)
+                'ctn'       => $ctn,                                             // (cart ctn recommended)
+                'total_qty' => $ctn * $qty,                                      // ctn * qty
+                'rack_no'   => (string) ($stock->rack_no ?? ''),                 // t_product_stocks
+            ];
+        });
 
             $count = $items->count();
 

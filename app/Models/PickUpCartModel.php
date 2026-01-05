@@ -17,4 +17,9 @@ class PickUpCartModel extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public function productStock(): BelongsTo
+    {
+        return $this->belongsTo(ProductStockModel::class, 'product_stock_id', 'id');
+    }
 }
