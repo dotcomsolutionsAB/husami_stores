@@ -374,10 +374,10 @@ class ProductStockController extends Controller
             $q = DB::table('t_product_stocks as s')
                 ->join('t_products as p', 'p.sku', '=', 's.sku');
 
-            // ✅ Filters (only these fields)
+            // ✅ Filters
             if ($godown !== '') {
-                // allow comma separated ids
                 $ids = array_values(array_filter(array_map('trim', explode(',', $godown))));
+                $ids = array_map('intval', $ids); // ✅ safer
                 if (count($ids) > 1) {
                     $q->whereIn('s.godown_id', $ids);
                 } else {
@@ -401,7 +401,7 @@ class ProductStockController extends Controller
                 $q->where('s.rack_no', 'like', "%{$rackNo}%");
             }
 
-            // ✅ Check distinct SKU count after filters
+            // ✅ Check distinct SKU after filters
             $distinctSkus = (clone $q)->distinct()->pluck('s.sku')->values();
 
             if ($distinctSkus->count() === 0) {
@@ -414,37 +414,46 @@ class ProductStockController extends Controller
 
             $sku = (string) $distinctSkus->first();
 
-            // ✅ Group by brand + finish_type, total = SUM(ctn*quantity) from t_product_stocks
-            $grouped = (clone $q)
+            // ✅ 1) Brand totals (no objects)
+            $brandTotals = (clone $q)
                 ->select(
                     's.sku',
-                    'p.brand as brand_id',
+                    'p.brand as brand',
+                    DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
+                )
+                ->groupBy('s.sku', 'p.brand')
+                ->orderBy('p.brand', 'asc')
+                ->get()
+                ->map(function ($r) {
+                    return [
+                        'brand'     => $r->brand === null ? null : (string)$r->brand,  // ✅ just value
+                        'total_qty' => (int) ($r->total_qty ?? 0),
+                    ];
+                })
+                ->values();
+
+            // ✅ 2) Finish totals (no objects)
+            $finishTotals = (clone $q)
+                ->select(
+                    's.sku',
                     'p.finish_type',
                     DB::raw('SUM(COALESCE(s.ctn,0) * COALESCE(s.quantity,0)) as total_qty')
                 )
-                ->groupBy('s.sku', 'p.brand', 'p.finish_type')
-                ->orderBy('p.brand', 'asc')
-                ->get();
-
-            // ✅ brand objects in batch (optional but recommended like your other APIs)
-            $brandIds = $grouped->pluck('brand_id')->filter()->unique()->values()->all();
-
-            $brands = empty($brandIds)
-                ? collect()
-                : \App\Models\BrandModel::with('logoRef')->whereIn('id', $brandIds)->get()->keyBy('id');
-
-            $data = $grouped->map(function ($r) use ($brands) {
-                return [
-                    'sku'         => (string) $r->sku,
-                    'brand'       => $r->brand_id ? ($brands->get($r->brand_id) ?: null) : null,
-                    'finish_type' => (string) ($r->finish_type ?? ''),
-                    'total_qty'   => (int) ($r->total_qty ?? 0),
-                ];
-            })->values();
+                ->groupBy('s.sku', 'p.finish_type')
+                ->orderBy('p.finish_type', 'asc')
+                ->get()
+                ->map(function ($r) {
+                    return [
+                        'finish_type' => (string) ($r->finish_type ?? ''),
+                        'total_qty'   => (int) ($r->total_qty ?? 0),
+                    ];
+                })
+                ->values();
 
             return $this->success('Data fetched successfully', [
-                'sku'   => $sku,
-                'rows'  => $data,
+                'sku'           => $sku,
+                'brand_totals'  => $brandTotals,
+                'finish_totals' => $finishTotals,
             ], 200);
 
         } catch (\Throwable $e) {
