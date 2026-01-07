@@ -16,15 +16,15 @@ class MasterDataController extends Controller
      */
     private function fetchFromView(Request $request, string $viewName)
     {
-        $limit  = max(1, (int) $request->input('limit', 50));
-        $offset = max(0, (int) $request->input('offset', 0));
-        $search = trim((string) $request->input('search', ''));
+        // $limit  = max(1, (int) $request->input('limit', 50));
+        // $offset = max(0, (int) $request->input('offset', 0));
+        // $search = trim((string) $request->input('search', ''));
 
         $q = DB::table($viewName)->select('id', 'name')->orderBy('name', 'asc');
 
-        if ($search !== '') {
-            $q->where('name', 'like', "%{$search}%");
-        }
+        // if ($search !== '') {
+        //     $q->where('name', 'like', "%{$search}%");
+        // }
 
         $total = (clone $q)->count();
 
