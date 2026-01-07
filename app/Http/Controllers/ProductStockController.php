@@ -302,9 +302,9 @@ class ProductStockController extends Controller
                 $q->where('p.item_name', 'like', "%{$item}%");
             }
 
-            // size filter
+            // size filter (exact match only)
             if ($size !== '') {
-                $q->where('p.size', 'like', "%{$size}%");
+                $q->where('p.size', $size);
             }
 
             // specification filter
