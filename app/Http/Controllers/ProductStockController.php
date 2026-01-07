@@ -281,7 +281,10 @@ class ProductStockController extends Controller
 
             // grade filter (MULTI)
             if (!empty($gradeArr)) {
-                $q->whereIn('p.grade_no', $gradeArr);
+                $q->whereIn(
+                    DB::raw('CAST(p.grade_no AS CHAR)'),
+                    $gradeArr
+                );
             }
 
             // finish filter (MULTI)
