@@ -16,29 +16,21 @@ class MasterDataController extends Controller
      */
     private function fetchFromView(Request $request, string $viewName)
     {
-        // $limit  = max(1, (int) $request->input('limit', 50));
-        // $offset = max(0, (int) $request->input('offset', 0));
-        // $search = trim((string) $request->input('search', ''));
+        $q = DB::table($viewName)
+            ->select('id', 'name')
+            ->orderBy('name', 'asc');
 
-        $q = DB::table($viewName)->select('id', 'name')->orderBy('name', 'asc');
-
-        // if ($search !== '') {
-        //     $q->where('name', 'like', "%{$search}%");
-        // }
-
-        $total = (clone $q)->count();
-
-        $items = $q->skip($offset)->take($limit)->get();
+        $items = $q->get();
         $count = $items->count();
 
-        return $this->success('Data fetched successfully', $items, 200, [
-            'pagination' => [
-                'limit'  => $limit,
-                'offset' => $offset,
-                'count'  => $count,
-                'total'  => $total,
-            ],
-        ]);
+        return $this->success(
+            'Data fetched successfully',
+            $items,
+            200,
+            [
+                'count' => $count
+            ]
+        );
     }
 
     public function grades(Request $request)
