@@ -220,6 +220,20 @@ class ProductStockController extends Controller
             // stock filters
             $rack_no = trim((string)$request->input('rack_no', ''));
 
+            // normalize comma separated filters
+            $toArray = function ($value) {
+                return collect(explode(',', (string)$value))
+                    ->map(fn($v) => trim($v))
+                    ->filter()
+                    ->values()
+                    ->all();
+            };
+
+            $brandArr  = $toArray($brand);
+            $gradeArr  = $toArray($request->input('grade'));
+            $finishArr = $toArray($finish);
+            $godownArr = $toArray($request->input('godown'));
+
             // JOIN stocks + products
             $q = DB::table('t_product_stocks as s')
                 ->join('t_products as p', 'p.sku', '=', 's.sku')
@@ -260,27 +274,41 @@ class ProductStockController extends Controller
                 $q->where('s.rack_no', 'like', "%{$rack_no}%");
             }
 
-            // product filters
-            if ($brand !== '') {
-                $q->where('p.brand', (int)$brand);
+            // brand filter (MULTI)
+            if (!empty($brandArr)) {
+                $q->whereIn('p.brand', array_map('intval', $brandArr));
             }
 
+            // grade filter (MULTI)
+            if (!empty($gradeArr)) {
+                $q->whereIn('p.grade_no', $gradeArr);
+            }
+
+            // finish filter (MULTI)
+            if (!empty($finishArr)) {
+                $q->whereIn('p.finish_type', $finishArr);
+            }
+
+            // godown filter (MULTI)
+            if (!empty($godownArr)) {
+                $q->whereIn('s.godown_id', array_map('intval', $godownArr));
+            }
+
+            // item filter
             if ($item !== '') {
                 $q->where('p.item_name', 'like', "%{$item}%");
             }
 
+            // size filter
             if ($size !== '') {
                 $q->where('p.size', 'like', "%{$size}%");
             }
 
-            if ($finish !== '') {
-                $q->where('p.finish_type', 'like', "%{$finish}%");
-            }
-
+            // specification filter
             if ($specifications !== '') {
-                // if specifications is big text / JSON / comma string, LIKE works
                 $q->where('p.specifications', 'like', "%{$specifications}%");
             }
+
 
             $total = (clone $q)->count();
 
