@@ -82,8 +82,6 @@ class ProductStockExport implements FromCollection, WithHeadings, WithMapping, W
                 's.tc_date',
                 's.tc_attachment',
                 's.remarks',
-                's.created_at',
-                's.updated_at'
             )
             ->orderBy('s.id', 'desc');
 
@@ -188,8 +186,6 @@ class ProductStockExport implements FromCollection, WithHeadings, WithMapping, W
             'TC No',
             'TC Date',
             'Remarks',
-            'Created At',
-            'Updated At',
         ];
     }
 
@@ -219,8 +215,6 @@ class ProductStockExport implements FromCollection, WithHeadings, WithMapping, W
             (string)($it->tc_no ?? ''),
             (string)($it->tc_date ?? ''),
             (string)($it->remarks ?? ''),
-            (string)($it->created_at ?? ''),
-            (string)($it->updated_at ?? ''),
         ];
     }
 
