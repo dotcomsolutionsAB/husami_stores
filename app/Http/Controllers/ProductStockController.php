@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Imports\ProductStockImport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ProductStockExport;
 
 class ProductStockController extends Controller
 {
@@ -651,6 +652,32 @@ class ProductStockController extends Controller
             return $this->validation($e->validator);
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Product stock import failed');
+        }
+    }
+
+    // export
+    public function export(Request $request)
+    {
+        try {
+            // Create folder if not exists
+            Storage::disk('public')->makeDirectory('product_stocks');
+
+            $fileName     = 'product_stocks_' . now()->format('Ymd_His') . '.xlsx';
+            $relativePath = 'product_stocks/' . $fileName;
+
+            // Generate and store excel
+            Excel::store(new ProductStockExport($request), $relativePath, 'public');
+
+            $url = Storage::disk('public')->url($relativePath);
+
+            return $this->success('Export generated successfully.', [
+                'file_name' => $fileName,
+                'path'      => $relativePath,
+                'url'       => $url,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Product stock export failed');
         }
     }
 
