@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Imports\ProductImport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProductExport;
+use Illuminate\Support\Facades\Storage;
 
 class ProductsController extends Controller
 {
@@ -187,7 +188,7 @@ class ProductsController extends Controller
     public function export(Request $request)
     {
         try {
-            // Same filters as fetch (no limit/offset)
+            // same filters as fetch (no limit/offset)
             $search = trim((string) $request->input('search', ''));
             $item   = trim((string) $request->input('item', ''));
             $brand  = trim((string) $request->input('brand', ''));
@@ -198,9 +199,23 @@ class ProductsController extends Controller
                 'brand'  => $brand,
             ]);
 
-            $fileName = 'products_' . now()->format('Ymd_His') . '.xlsx';
+            // ensure folder exists: storage/app/public/products
+            Storage::disk('public')->makeDirectory('products');
 
-            return Excel::download($export, $fileName);
+            $fileName = 'products_' . now()->format('Ymd_His') . '.xlsx';
+            $relativePath = 'products/' . $fileName;
+
+            // store on public disk
+            Excel::store($export, $relativePath, 'public');
+
+            // public url (requires storage:link)
+            $url = Storage::disk('public')->url($relativePath);
+
+            return $this->success('Export generated successfully.', [
+                'file_name' => $fileName,
+                'path'      => $relativePath,
+                'url'       => $url,
+            ], 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Product export failed');
