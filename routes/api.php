@@ -184,6 +184,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/retrieve/{id?}', [PickUpSlipController::class, 'fetch']);
         Route::post('/update/{id}', [PickUpSlipController::class, 'edit']);
         Route::delete('/delete/{id}', [PickUpSlipController::class, 'delete']);
+        Route::post('/create_to', [PickUpSlipController::class, 'addToSlip']);
     });
 
     // quotation route

@@ -396,4 +396,101 @@ class PickUpSlipController extends Controller
             return $this->serverError($e, 'Pick up slip delete failed');
         }
     }
+
+    public function addToSlip(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'product_stock_id' => 'required|integer|exists:t_product_stocks,id',
+                'pick_up_slip_id'  => 'required|integer|exists:t_pick_up_slip,id',
+                'qty'              => 'required|numeric|min:0.001',
+                'ctn'              => 'required|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->validation($validator);
+            }
+
+            $productStockId = (int) $request->input('product_stock_id');
+            $pickUpSlipId   = (int) $request->input('pick_up_slip_id');
+            $qty            = (float) $request->input('qty');
+            $ctn            = (float) $request->input('ctn');
+
+            // fetch stock row (for sku + godown)
+            $stock = ProductStockModel::select('id','sku','godown_id','quantity')
+                ->where('id', $productStockId)
+                ->first();
+
+            if (!$stock) {
+                return $this->error('Invalid product stock.', 404);
+            }
+
+            // (optional but recommended) stock availability check
+            if ((float)$stock->quantity < $qty) {
+                return $this->error("Insufficient stock. Available: {$stock->quantity}", 422);
+            }
+
+            // (optional) ensure slip exists (exists rule already checks, but keeping safe)
+            $slip = PickUpSlipModel::select('id')->where('id', $pickUpSlipId)->first();
+            if (!$slip) {
+                return $this->error('Invalid pickup slip.', 404);
+            }
+
+            DB::beginTransaction();
+
+            // If you want to MERGE same stock into same slip instead of new row every time:
+            $existing = PickUpSlipProductModel::where('pick_up_slip_id', $pickUpSlipId)
+                ->where('product_stock_id', $productStockId)
+                ->first();
+
+            if ($existing) {
+                // update quantity/ctn (and keep approved = 0 if not approved)
+                $existing->quantity = (float)$existing->quantity + $qty;
+                $existing->ctn      = (float)$existing->ctn + $ctn;
+                $existing->save();
+
+                DB::commit();
+
+                return $this->success('Item updated in pickup slip.', [
+                    'id'               => $existing->id,
+                    'pick_up_slip_id'  => $existing->pick_up_slip_id,
+                    'product_stock_id' => $existing->product_stock_id,
+                    'sku'              => $existing->sku,
+                    'godown'           => $existing->godown,
+                    'ctn'              => (float) $existing->ctn,
+                    'quantity'         => (float) $existing->quantity,
+                    'approved'         => (int) $existing->approved,
+                ], 200);
+            }
+
+            // create new row
+            $item = PickUpSlipProductModel::create([
+                'pick_up_slip_id'  => $pickUpSlipId,
+                'product_stock_id' => $productStockId,
+                'sku'              => $stock->sku,
+                'godown'           => $stock->godown_id, // storing godown_id in your 'godown' col
+                'ctn'              => $ctn,
+                'quantity'         => $qty,
+                'approved'         => 0,
+                'remarks'          => null,
+            ]);
+
+            DB::commit();
+
+            return $this->success('Item added to pickup slip successfully.', [
+                'id'               => $item->id,
+                'pick_up_slip_id'  => $item->pick_up_slip_id,
+                'product_stock_id' => $item->product_stock_id,
+                'sku'              => $item->sku,
+                'godown'           => $item->godown,
+                'ctn'              => (float) $item->ctn,
+                'quantity'         => (float) $item->quantity,
+                'approved'         => (int) $item->approved,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return $this->serverError($e, 'Add to pickup slip failed');
+        }
+    }
 }
