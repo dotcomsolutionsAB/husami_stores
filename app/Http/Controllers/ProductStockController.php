@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Http\Controllers\Controller;
+use App\Imports\ProductStockImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductStockController extends Controller
 {
@@ -625,6 +628,29 @@ class ProductStockController extends Controller
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Product stock attachment delete failed');
+        }
+    }
+
+    // import
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:xlsx,xls,csv,txt',
+            ]);
+
+            $import = new ProductStockImport();
+
+            Excel::import($import, $request->file('file'));
+
+            $result = $import->getResult();
+
+            return $this->success('Import completed.', $result, 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // keep your validator response style
+            return $this->validation($e->validator);
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Product stock import failed');
         }
     }
 

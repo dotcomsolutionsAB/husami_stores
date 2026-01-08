@@ -6,6 +6,8 @@ use App\Models\ProductModel;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use App\Imports\ProductImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductsController extends Controller
 {
@@ -158,6 +160,25 @@ class ProductsController extends Controller
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Product delete failed');
+        }
+    }
+
+    // import
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:xlsx,xls,csv,txt',
+            ]);
+
+            $import = new ProductImport();
+            Excel::import($import, $request->file('file'));
+
+            return $this->success('Import completed.', $import->getResult(), 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->validation($e->validator);
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Product import failed');
         }
     }
 }
