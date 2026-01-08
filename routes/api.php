@@ -138,6 +138,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/delete_attachment/{id}', [ProductStockController::class, 'deleteAttachment']);
         Route::post('/view_totals', [ProductStockController::class, 'fetchTotalsByBrandFinish']);
         Route::post('/import', [ProductStockController::class, 'import']);
+        Route::post('/export', [ProductStockController::class, 'export']);
     });
 
     // logs route

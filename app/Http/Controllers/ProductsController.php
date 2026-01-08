@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Imports\ProductImport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ProductExport;
 
 class ProductsController extends Controller
 {
@@ -179,6 +180,30 @@ class ProductsController extends Controller
             return $this->validation($e->validator);
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Product import failed');
+        }
+    }
+
+    // export
+    public function export(Request $request)
+    {
+        try {
+            // Same filters as fetch (no limit/offset)
+            $search = trim((string) $request->input('search', ''));
+            $item   = trim((string) $request->input('item', ''));
+            $brand  = trim((string) $request->input('brand', ''));
+
+            $export = new ProductExport([
+                'search' => $search,
+                'item'   => $item,
+                'brand'  => $brand,
+            ]);
+
+            $fileName = 'products_' . now()->format('Ymd_His') . '.xlsx';
+
+            return Excel::download($export, $fileName);
+
+        } catch (\Throwable $e) {
+            return $this->serverError($e, 'Product export failed');
         }
     }
 }
