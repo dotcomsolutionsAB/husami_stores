@@ -118,7 +118,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/retrieve/{id?}', [ProductsController::class, 'fetch']);
         Route::post('/update/{id}', [ProductsController::class, 'edit']);
         Route::delete('/delete/{id}', [ProductsController::class, 'delete']);
-        Route::post('import', [ProductsController::class, 'import']);
+        Route::post('/import', [ProductsController::class, 'import']);
     });
 
     // template route
@@ -135,9 +135,9 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/retrieve/{id?}', [ProductStockController::class, 'fetch']);
         Route::post('/update/{id}', [ProductStockController::class, 'edit']);
         Route::delete('/delete/{id}', [ProductStockController::class, 'delete']);
-        Route::post('delete_attachment/{id}', [ProductStockController::class, 'deleteAttachment']);
-        Route::post('view_totals', [ProductStockController::class, 'fetchTotalsByBrandFinish']);
-        Route::post('import', [ProductStockController::class, 'import']);
+        Route::post('/delete_attachment/{id}', [ProductStockController::class, 'deleteAttachment']);
+        Route::post('/view_totals', [ProductStockController::class, 'fetchTotalsByBrandFinish']);
+        Route::post('/import', [ProductStockController::class, 'import']);
     });
 
     // logs route
