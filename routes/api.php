@@ -119,6 +119,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/update/{id}', [ProductsController::class, 'edit']);
         Route::delete('/delete/{id}', [ProductsController::class, 'delete']);
         Route::post('/import', [ProductsController::class, 'import']);
+        Route::post('/export', [ProductStockController::class, 'export']);
     });
 
     // template route
