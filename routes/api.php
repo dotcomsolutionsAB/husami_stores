@@ -119,7 +119,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/update/{id}', [ProductsController::class, 'edit']);
         Route::delete('/delete/{id}', [ProductsController::class, 'delete']);
         Route::post('/import', [ProductsController::class, 'import']);
-        Route::post('/export', [ProductsController::class, 'export']);
+        Route::post('/export', [ProductsController::class, 'exportExcel']);
     });
 
     // template route
@@ -139,7 +139,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
         Route::post('/delete_attachment/{id}', [ProductStockController::class, 'deleteAttachment']);
         Route::post('/view_totals', [ProductStockController::class, 'fetchTotalsByBrandFinish']);
         Route::post('/import', [ProductStockController::class, 'import']);
-        Route::post('/export', [ProductStockController::class, 'export']);
+        Route::post('/export', [ProductStockController::class, 'exportExcel']);
     });
 
     // logs route

@@ -185,7 +185,7 @@ class ProductsController extends Controller
     }
 
     // export
-    public function export(Request $request)
+    public function exportExcel(Request $request)
     {
         try {
             // same filters as fetch (no limit/offset)

@@ -656,7 +656,7 @@ class ProductStockController extends Controller
     }
 
     // export
-    public function export(Request $request)
+    public function exportExcel(Request $request)
     {
         try {
             // Create folder if not exists

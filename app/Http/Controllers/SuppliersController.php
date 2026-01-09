@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\CsvExportService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use App\Exports\SupplierExport;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SuppliersController extends Controller
 {
@@ -229,61 +232,90 @@ class SuppliersController extends Controller
     //         return $this->serverError($e, 'Supplier export failed');
     //     }
     // }
-    public function exportExcel(Request $request, CsvExportService $csv)
+    // public function exportExcel(Request $request, CsvExportService $csv)
+    // {
+    //     try {
+    //         $search = trim((string) $request->input('search', ''));
+
+    //         $q = SupplierModel::orderBy('id', 'desc');
+    //         if ($search !== '') $q->where('name', 'like', "%{$search}%");
+
+    //         $suppliers = $q->get();
+
+    //         if ($suppliers->isEmpty()) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'No suppliers found.',
+    //             ], 404);
+    //         }
+
+    //         $headers = ['ID', 'Name', 'Address Line 1', 'Address Line 2', 'City', 'Pincode', 'GSTIN', 'State', 'Country', 'Mobile', 'Email', 'Created At', 'Updated At'];
+
+    //         $result = $csv->export(
+    //             'exports/suppliers',
+    //             'suppliers',
+    //             $headers,
+    //             $suppliers,
+    //             function ($supplier) {
+    //                 return [
+    //                     $supplier->id,
+    //                     $supplier->name,
+    //                     $supplier->address_line_1,
+    //                     $supplier->address_line_2,
+    //                     $supplier->city,
+    //                     $supplier->pincode,
+    //                     $supplier->gstin,
+    //                     $supplier->state,
+    //                     $supplier->country,
+    //                     $supplier->mobile,
+    //                     $supplier->email,
+    //                     $supplier->created_at,
+    //                     $supplier->updated_at,
+    //                 ];
+    //             }
+    //         );
+
+    //         return response()->json([
+    //             'status'   => true,
+    //             'message'  => 'CSV exported successfully!',
+    //             'file_url' => $result['url'],
+    //         ], 200);
+
+    //     } catch (\Throwable $e) {
+    //         Log::error('Supplier export failed', ['error' => $e->getMessage()]);
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Failed to export suppliers.',
+    //         ], 500);
+    //     }
+    // }
+
+    public function export(Request $request)
     {
         try {
             $search = trim((string) $request->input('search', ''));
 
-            $q = SupplierModel::orderBy('id', 'desc');
-            if ($search !== '') $q->where('name', 'like', "%{$search}%");
+            $export = new SupplierExport([
+                'search' => $search,
+            ]);
 
-            $suppliers = $q->get();
+            Storage::disk('public')->makeDirectory('suppliers');
 
-            if ($suppliers->isEmpty()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'No suppliers found.',
-                ], 404);
-            }
+            $fileName     = 'suppliers_' . now()->format('Ymd_His') . '.xlsx';
+            $relativePath = 'suppliers/' . $fileName;
 
-            $headers = ['ID', 'Name', 'Address Line 1', 'Address Line 2', 'City', 'Pincode', 'GSTIN', 'State', 'Country', 'Mobile', 'Email', 'Created At', 'Updated At'];
+            Excel::store($export, $relativePath, 'public');
 
-            $result = $csv->export(
-                'exports/suppliers',
-                'suppliers',
-                $headers,
-                $suppliers,
-                function ($supplier) {
-                    return [
-                        $supplier->id,
-                        $supplier->name,
-                        $supplier->address_line_1,
-                        $supplier->address_line_2,
-                        $supplier->city,
-                        $supplier->pincode,
-                        $supplier->gstin,
-                        $supplier->state,
-                        $supplier->country,
-                        $supplier->mobile,
-                        $supplier->email,
-                        $supplier->created_at,
-                        $supplier->updated_at,
-                    ];
-                }
-            );
+            $url = Storage::disk('public')->url($relativePath);
 
-            return response()->json([
-                'status'   => true,
-                'message'  => 'CSV exported successfully!',
-                'file_url' => $result['url'],
+            return $this->success('Export generated successfully.', [
+                'file_name' => $fileName,
+                'path'      => $relativePath,
+                'url'       => $url,
             ], 200);
 
         } catch (\Throwable $e) {
-            Log::error('Supplier export failed', ['error' => $e->getMessage()]);
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to export suppliers.',
-            ], 500);
+            return $this->serverError($e, 'Supplier export failed');
         }
     }
 }
