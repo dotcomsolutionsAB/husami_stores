@@ -35,16 +35,18 @@ class SupplierExport implements FromCollection, WithHeadings, WithMapping, WithS
             $q->where('name', 'like', "%{$search}%");
         }
 
-        // IMPORTANT: update columns as per your t_suppliers table
         return $q->get([
             'id',
             'name',
             'mobile',
             'email',
-            'address',
-            'gst_no',
-            'created_at',
-            'updated_at',
+            'address_line_1',
+            'address_line_2',
+            'city',
+            'pincode',
+            'state',
+            'country',
+            'gstin',
         ]);
     }
 
@@ -55,24 +57,30 @@ class SupplierExport implements FromCollection, WithHeadings, WithMapping, WithS
             'Name',
             'Mobile',
             'Email',
-            'Address',
-            'GST No',
-            'Created At',
-            'Updated At',
+            'Address Line 1',
+            'Address Line 2',
+            'City',
+            'Pincode',
+            'State',
+            'Country',
+            'GSTIN',
         ];
     }
 
     public function map($s): array
     {
         return [
-            (string) ($s->id ?? ''),
-            (string) ($s->name ?? ''),
-            (string) ($s->mobile ?? ''),
-            (string) ($s->email ?? ''),
-            (string) ($s->address ?? ''),
-            (string) ($s->gst_no ?? ''),
-            (string) ($s->created_at ?? ''),
-            (string) ($s->updated_at ?? ''),
+            (string)($s->id ?? ''),
+            (string)($s->name ?? ''),
+            (string)($s->mobile ?? ''),
+            (string)($s->email ?? ''),
+            (string)($s->address_line_1 ?? ''),
+            (string)($s->address_line_2 ?? ''),
+            (string)($s->city ?? ''),
+            (string)($s->pincode ?? ''),
+            (string)($s->state ?? ''),
+            (string)($s->country ?? ''),
+            (string)($s->gstin ?? ''),
         ];
     }
 
@@ -97,7 +105,7 @@ class SupplierExport implements FromCollection, WithHeadings, WithMapping, WithS
                 $sheet = $event->sheet->getDelegate();
 
                 $highestRow = $sheet->getHighestRow();
-                $highestCol = $sheet->getHighestColumn();
+                $highestCol = $sheet->getHighestColumn(); // should be "K"
                 $range      = "A1:{$highestCol}{$highestRow}";
 
                 $sheet->getStyle($range)->getAlignment()->setWrapText(true);
@@ -116,10 +124,12 @@ class SupplierExport implements FromCollection, WithHeadings, WithMapping, WithS
                 $sheet->getStyle("B2:B{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 $sheet->getStyle("C2:C{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle("D2:D{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                $sheet->getStyle("E2:E{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                $sheet->getStyle("F2:F{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                $sheet->getStyle("G2:G{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("E2:F{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle("G2:G{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 $sheet->getStyle("H2:H{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("I2:I{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle("J2:J{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle("K2:K{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
                 $sheet->freezePane('A2');
             },

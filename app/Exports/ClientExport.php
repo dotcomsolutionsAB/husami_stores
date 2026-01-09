@@ -35,15 +35,18 @@ class ClientExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $q->where('name', 'like', "%{$search}%");
         }
 
-        // IMPORTANT: update columns as per your t_clients table
         return $q->get([
             'id',
             'name',
             'mobile',
             'email',
-            'address',
-            'created_at',
-            'updated_at',
+            'address_line_1',
+            'address_line_2',
+            'city',
+            'pincode',
+            'state',
+            'country',
+            'gstin',
         ]);
     }
 
@@ -54,25 +57,34 @@ class ClientExport implements FromCollection, WithHeadings, WithMapping, WithSty
             'Name',
             'Mobile',
             'Email',
-            'Address',
-            'Created At',
-            'Updated At',
+            'Address Line 1',
+            'Address Line 2',
+            'City',
+            'Pincode',
+            'State',
+            'Country',
+            'GSTIN',
         ];
     }
 
     public function map($c): array
     {
         return [
-            (string) ($c->id ?? ''),
-            (string) ($c->name ?? ''),
-            (string) ($c->mobile ?? ''),
-            (string) ($c->email ?? ''),
-            (string) ($c->address ?? ''),
-            (string) ($c->created_at ?? ''),
-            (string) ($c->updated_at ?? ''),
+            (string)($c->id ?? ''),
+            (string)($c->name ?? ''),
+            (string)($c->mobile ?? ''),
+            (string)($c->email ?? ''),
+            (string)($c->address_line_1 ?? ''),
+            (string)($c->address_line_2 ?? ''),
+            (string)($c->city ?? ''),
+            (string)($c->pincode ?? ''),
+            (string)($c->state ?? ''),
+            (string)($c->country ?? ''),
+            (string)($c->gstin ?? ''),
         ];
     }
 
+    // Heading row styling (bold + center)
     public function styles(Worksheet $sheet)
     {
         return [
@@ -94,7 +106,7 @@ class ClientExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 $sheet = $event->sheet->getDelegate();
 
                 $highestRow = $sheet->getHighestRow();
-                $highestCol = $sheet->getHighestColumn();
+                $highestCol = $sheet->getHighestColumn(); // should be "K"
                 $range      = "A1:{$highestCol}{$highestRow}";
 
                 // wrap text
@@ -116,9 +128,12 @@ class ClientExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 $sheet->getStyle("B2:B{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // Name
                 $sheet->getStyle("C2:C{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Mobile
                 $sheet->getStyle("D2:D{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // Email
-                $sheet->getStyle("E2:E{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // Address
-                $sheet->getStyle("F2:F{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Created
-                $sheet->getStyle("G2:G{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Updated
+                $sheet->getStyle("E2:F{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // Address lines
+                $sheet->getStyle("G2:G{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // City
+                $sheet->getStyle("H2:H{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Pincode
+                $sheet->getStyle("I2:I{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // State
+                $sheet->getStyle("J2:J{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // Country
+                $sheet->getStyle("K2:K{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);   // GSTIN
 
                 $sheet->freezePane('A2');
             },
