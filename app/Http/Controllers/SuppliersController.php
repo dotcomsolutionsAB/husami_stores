@@ -290,7 +290,7 @@ class SuppliersController extends Controller
     //     }
     // }
 
-    public function export(Request $request)
+    public function exportExcel(Request $request)
     {
         try {
             $search = trim((string) $request->input('search', ''));
