@@ -359,7 +359,7 @@ class QuotationController extends Controller
             DB::commit();
 
             $fresh = QuotationModel::with('products')->find($row->id);
-            $fileUrl = $fresh->file ? DB::table('t_uploads')->where('id', $fresh->file)->value('file_url') : null;
+            $fileUrl = $fresh->file ? DB::table('t_uploads')->where('id', $fresh->file)->value('file_path') : null;
 
             return $this->success('Quotation updated successfully.', [
                 'quotation' => $fresh,
