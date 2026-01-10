@@ -8,5 +8,10 @@ class QuotationProductModel extends Model
 {
     //
     protected $table = 't_quotation_products';
-    protected $fillable = ['quotation','product','qty','unit','price','discount','hsn','tax'];
+    protected $fillable = ['quotation','sku','qty','unit','price','discount','hsn','tax'];
+
+    public function quotationRef()
+    {
+        return $this->belongsTo(QuotationModel::class, 'quotation', 'id');
+    }
 }
