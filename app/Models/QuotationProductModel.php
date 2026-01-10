@@ -14,4 +14,10 @@ class QuotationProductModel extends Model
     {
         return $this->belongsTo(QuotationModel::class, 'quotation', 'id');
     }
+
+    public function productRef()
+    {
+        // ✅ map quotation_products.sku -> t_products.sku
+        return $this->belongsTo(ProductModel::class, 'sku', 'sku');
+    }
 }

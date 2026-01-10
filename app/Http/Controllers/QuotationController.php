@@ -183,10 +183,27 @@ class QuotationController extends Controller
         try {
             // ---------------- SINGLE ----------------
             if ($id !== null) {
-                $row = QuotationModel::with(['products'])->find($id);
+
+                $row = QuotationModel::query()
+                    ->select([
+                        'id','client','quotation','quotation_date','enquiry','enquiry_date','template',
+                        'gross_total','packing_and_forwarding','freight_val','total_tax','round_off','grand_total',
+                        'prices','p_and_f','freight','delivery','payment','validity','remarks','file'
+                    ])
+                    ->with([
+                        'products' => function ($p) {
+                            $p->select([
+                                'id','quotation','sku','qty','unit','price','discount','hsn','tax'
+                            ])->with([
+                                'productRef:sku,item_name' // ✅ only required cols
+                            ]);
+                        }
+                    ])
+                    ->find($id);
 
                 if (!$row) return $this->error('Quotation not found.', 404);
 
+                // file url
                 $fileUrl = null;
                 if (!empty($row->file)) {
                     $upload = DB::table('t_uploads')->where('id', $row->file)->first();
@@ -195,12 +212,54 @@ class QuotationController extends Controller
                     }
                 }
 
+                // ✅ transform response (no created_at/updated_at)
+                $quotation = [
+                    'id' => (string)$row->id,
+                    'client' => (string)$row->client,
+                    'quotation' => (string)$row->quotation,
+                    'quotation_date' => $row->quotation_date,
+                    'enquiry' => $row->enquiry,
+                    'enquiry_date' => $row->enquiry_date,
+                    'template' => (string)$row->template,
+
+                    'gross_total' => (string)$row->gross_total,
+                    'packing_and_forwarding' => (string)$row->packing_and_forwarding,
+                    'freight_val' => (string)$row->freight_val,
+                    'total_tax' => (string)$row->total_tax,
+                    'round_off' => (string)$row->round_off,
+                    'grand_total' => (string)$row->grand_total,
+
+                    'prices' => $row->prices,
+                    'p_and_f' => $row->p_and_f,
+                    'freight' => $row->freight,
+                    'delivery' => $row->delivery,
+                    'payment' => $row->payment,
+                    'validity' => $row->validity,
+                    'remarks' => $row->remarks,
+
+                    'file' => $row->file ? (string)$row->file : null,
+                ];
+
+                $products = $row->products->map(function ($p) {
+                    return [
+                        'id' => (string)$p->id,
+                        'sku' => (string)$p->sku,
+                        'product_name' => (string)optional($p->productRef)->item_name, // ✅ from t_products
+                        'qty' => (string)$p->qty,
+                        'unit' => $p->unit ? (string)$p->unit : null,
+                        'price' => (string)$p->price,
+                        'discount' => (string)$p->discount,
+                        'hsn' => (string)($p->hsn ?? ''),
+                        'tax' => (string)$p->tax,
+                    ];
+                })->values();
+
                 return $this->success('Data fetched successfully', [
-                    'quotation' => $row,
+                    'quotation' => $quotation,
+                    'products'  => $products,
                     'file_url'  => $fileUrl,
                 ], 200);
             }
-
             // ---------------- LIST ----------------
             $limit  = max(1, (int) $request->input('limit', 10));
             $offset = max(0, (int) $request->input('offset', 0));
@@ -210,6 +269,10 @@ class QuotationController extends Controller
             $template = trim((string) $request->input('template', ''));
 
             $q = QuotationModel::query()
+                ->select([
+                    'id','client','quotation','quotation_date','enquiry','enquiry_date','template',
+                    'gross_total','total_tax','round_off','grand_total','file'
+                ])
                 ->orderBy('id', 'desc');
 
             // search on quotation or enquiry (you can extend)
