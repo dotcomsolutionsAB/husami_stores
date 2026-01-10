@@ -239,8 +239,8 @@ class QuotationController extends Controller
         }
     }
 
-    // ✅ UPDATE (header + products + optional file)
-    public function update(Request $request, $id)
+    // ✅ Edit (header + products + optional file)
+    public function edit(Request $request, $id)
     {
         try {
             $row = QuotationModel::find($id);
