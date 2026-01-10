@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\QuotationModel;
 use App\Models\QuotationProductModel;
+use App\Models\CounterModel;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +43,7 @@ class QuotationController extends Controller
 
                 // products
                 'products' => 'required|array|min:1',
-                'products.*.sku' => 'required|integer|exists:t_products,sku',      // as per schema unsignedBigInteger
+                'products.*.sku' => 'required|integer|exists:t_products,sku', 
                 'products.*.qty' => 'required|integer|min:1',
                 'products.*.unit' => 'nullable|integer',
                 'products.*.price' => 'nullable|numeric',
@@ -58,9 +59,9 @@ class QuotationController extends Controller
                 return $this->validation($validator);
             }
 
-            DB::beginTransaction();
+            $v = $validator->validated();
 
-            // ✅ upload file if provided
+            // ✅ Upload file OUTSIDE transaction (avoid holding DB lock while uploading)
             $uploadId = null;
             $fileUrl  = null;
 
@@ -69,78 +70,101 @@ class QuotationController extends Controller
 
                 $f = $request->file('file');
                 $ext = strtolower($f->getClientOriginalExtension() ?: 'pdf');
-                $fileName = 'quotation_' . $request->input('quotation') . '_' . now()->format('Ymd_His') . '.' . $ext;
+                $fileName = 'quotation_' . $v['quotation'] . '_' . now()->format('Ymd_His') . '.' . $ext;
 
                 $relativePath = 'quotation/' . $fileName;
                 Storage::disk('public')->putFileAs('quotation', $f, $fileName);
 
-                // Insert into t_uploads (same pattern)
                 $uploadId = DB::table('t_uploads')->insertGetId([
                     'file_name' => $fileName,
-                    'file_path' => $relativePath,  // IMPORTANT: relative path on public disk
+                    'file_path' => $relativePath,
                     'file_ext'  => $ext,
                     'file_size' => $f->getSize(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                
-                // ✅ URL for response (NOT stored in DB)
+
                 $fileUrl = Storage::disk('public')->url($relativePath);
             }
 
-            // ✅ create quotation header
-            $q = QuotationModel::create([
-                'client' => (int)$request->client,
-                'quotation' => $request->quotation,
-                'quotation_date' => $request->quotation_date,
-                'enquiry' => $request->enquiry,
-                'enquiry_date' => $request->enquiry_date,
-                'template' => (int)$request->template,
+            // ✅ Create quotation inside transaction + counter lock/verify/increment
+            $q = DB::transaction(function () use ($v, $uploadId) {
 
-                'gross_total' => $request->gross_total ?? 0,
-                'packing_and_forwarding' => $request->packing_and_forwarding ?? 0,
-                'freight_val' => $request->freight_val ?? 0,
-                'total_tax' => $request->total_tax ?? 0,
-                'round_off' => $request->round_off ?? 0,
-                'grand_total' => $request->grand_total ?? 0,
+                // ✅ Lock counter row (prevents race conditions)
+                $counter = CounterModel::where('name', 'quotation')
+                    ->lockForUpdate()
+                    ->first();
 
-                'prices' => $request->prices,
-                'p_and_f' => $request->p_and_f,
-                'freight' => $request->freight,
-                'delivery' => $request->delivery,
-                'payment' => $request->payment,
-                'validity' => $request->validity,
-                'remarks' => $request->remarks,
+                if (!$counter) {
+                    throw new \Exception("Counter 'quotation' not found.");
+                }
 
-                'file' => $uploadId,
-            ]);
+                $expectedQuotationNo = $counter->formatted;
+                if (trim((string)$v['quotation']) !== $expectedQuotationNo) {
+                    throw new \Exception("Invalid quotation number. Expected: {$expectedQuotationNo}");
+                }
 
-            // ✅ insert products
-            $ins = [];
-            foreach ($request->products as $p) {
-                $ins[] = [
-                    'quotation' => $q->id,                 // ✅ FK stores t_quotation.id
-                    'sku' => (int)$p['sku'],
-                    'qty' => (int)$p['qty'],
-                    'unit' => isset($p['unit']) ? (int)$p['unit'] : null,
-                    'price' => isset($p['price']) ? (float)$p['price'] : 0,
-                    'discount' => isset($p['discount']) ? (float)$p['discount'] : 0,
-                    'hsn' => $p['hsn'] ?? null,
-                    'tax' => isset($p['tax']) ? (float)$p['tax'] : 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-            DB::table('t_quotation_products')->insert($ins);
+                // ✅ create quotation header
+                $q = QuotationModel::create([
+                    'client' => (int)$v['client'],
+                    'quotation' => $v['quotation'],
+                    'quotation_date' => $v['quotation_date'] ?? null,
+                    'enquiry' => $v['enquiry'] ?? null,
+                    'enquiry_date' => $v['enquiry_date'] ?? null,
+                    'template' => (int)$v['template'],
 
-            DB::commit();
+                    'gross_total' => $v['gross_total'] ?? 0,
+                    'packing_and_forwarding' => $v['packing_and_forwarding'] ?? 0,
+                    'freight_val' => $v['freight_val'] ?? 0,
+                    'total_tax' => $v['total_tax'] ?? 0,
+                    'round_off' => $v['round_off'] ?? 0,
+                    'grand_total' => $v['grand_total'] ?? 0,
+
+                    'prices' => $v['prices'] ?? null,
+                    'p_and_f' => $v['p_and_f'] ?? null,
+                    'freight' => $v['freight'] ?? null,
+                    'delivery' => $v['delivery'] ?? null,
+                    'payment' => $v['payment'] ?? null,
+                    'validity' => $v['validity'] ?? null,
+                    'remarks' => $v['remarks'] ?? null,
+
+                    'file' => $uploadId,
+                ]);
+
+                // ✅ insert products
+                $ins = [];
+                foreach ($v['products'] as $p) {
+                    $ins[] = [
+                        'quotation' => $q->id,
+                        'sku' => $p['sku'],
+                        'qty' => (int)$p['qty'],
+                        'unit' => isset($p['unit']) ? (int)$p['unit'] : null,
+                        'price' => isset($p['price']) ? (float)$p['price'] : 0,
+                        'discount' => isset($p['discount']) ? (float)$p['discount'] : 0,
+                        'hsn' => $p['hsn'] ?? null,
+                        'tax' => isset($p['tax']) ? (float)$p['tax'] : 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                DB::table('t_quotation_products')->insert($ins);
+
+                // ✅ Increment counter AFTER quotation created successfully
+                $counter->number = (int)$counter->number + 1;
+                $counter->save();
+
+                return $q;
+            });
 
             // ✅ return fresh with products
             $fresh = QuotationModel::with('products')->find($q->id);
 
-            // if fileUrl not set but file id exists (safety)
+            // ✅ If file_url not set (safety), compute from t_uploads.file_path
             if (!$fileUrl && $fresh->file) {
-                $fileUrl = DB::table('t_uploads')->where('id', $fresh->file)->value('file_url');
+                $upload = DB::table('t_uploads')->where('id', $fresh->file)->first();
+                if ($upload && !empty($upload->file_path)) {
+                    $fileUrl = Storage::disk('public')->url($upload->file_path);
+                }
             }
 
             return $this->success('Quotation created successfully.', [
@@ -149,7 +173,6 @@ class QuotationController extends Controller
             ], 201);
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             return $this->serverError($e, 'Quotation create failed');
         }
     }
