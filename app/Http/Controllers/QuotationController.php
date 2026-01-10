@@ -23,7 +23,7 @@ class QuotationController extends Controller
                 'quotation_date' => 'nullable|date',
                 'enquiry' => 'nullable|string|max:255',
                 'enquiry_date' => 'nullable|date',
-                'template' => 'required|integer',
+                'template' => 'required|integer|exists:t_template,id',
 
                 'gross_total' => 'nullable|numeric',
                 'packing_and_forwarding' => 'nullable|numeric',
@@ -74,18 +74,18 @@ class QuotationController extends Controller
                 $relativePath = 'quotation/' . $fileName;
                 Storage::disk('public')->putFileAs('quotation', $f, $fileName);
 
-                $fileUrl = Storage::disk('public')->url($relativePath);
-
                 // Insert into t_uploads (same pattern)
                 $uploadId = DB::table('t_uploads')->insertGetId([
-                    'file_url'   => $fileUrl,
-                    'file_path'  => $relativePath,
-                    'file_name'  => $fileName,
-                    'mime_type'  => $f->getClientMimeType(),
-                    'file_size'  => $f->getSize(),
+                    'file_name' => $fileName,
+                    'file_path' => $relativePath,  // IMPORTANT: relative path on public disk
+                    'file_ext'  => $ext,
+                    'file_size' => $f->getSize(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                
+                // ✅ URL for response (NOT stored in DB)
+                $fileUrl = Storage::disk('public')->url($relativePath);
             }
 
             // ✅ create quotation header
@@ -166,7 +166,10 @@ class QuotationController extends Controller
 
                 $fileUrl = null;
                 if (!empty($row->file)) {
-                    $fileUrl = DB::table('t_uploads')->where('id', $row->file)->value('file_url');
+                    $upload = DB::table('t_uploads')->where('id', $row->file)->first();
+                    if ($upload && !empty($upload->file_path)) {
+                        $fileUrl = Storage::disk('public')->url($upload->file_path);
+                    }
                 }
 
                 return $this->success('Data fetched successfully', [
@@ -209,12 +212,16 @@ class QuotationController extends Controller
 
             // attach file_url in batch (optional but useful)
             $fileIds = $items->pluck('file')->filter()->unique()->values()->all();
+
             $uploadMap = empty($fileIds)
                 ? collect()
-                : DB::table('t_uploads')->whereIn('id', $fileIds)->pluck('file_url', 'id');
+                : DB::table('t_uploads')->whereIn('id', $fileIds)->pluck('file_path', 'id');
 
             $items = $items->map(function ($it) use ($uploadMap) {
-                $it->file_url = $it->file ? ($uploadMap[$it->file] ?? null) : null;
+                $it->file_url = null;
+                if ($it->file && isset($uploadMap[$it->file]) && $uploadMap[$it->file]) {
+                    $it->file_url = Storage::disk('public')->url($uploadMap[$it->file]);
+                }
                 return $it;
             });
 
@@ -293,17 +300,12 @@ class QuotationController extends Controller
                 $relativePath = 'quotation/' . $fileName;
                 Storage::disk('public')->putFileAs('quotation', $f, $fileName);
 
-                $fileUrl = Storage::disk('public')->url($relativePath);
-
-                // Insert upload record
+                // ✅ Insert upload record (your schema)
                 $uploadId = DB::table('t_uploads')->insertGetId([
-                    'file_url'   => $fileUrl,
-                    'file_path'  => $relativePath,
-                    'file_name'  => $fileName,
-                    'mime_type'  => $f->getClientMimeType(),
-                    'file_size'  => $f->getSize(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'file_name' => $fileName,
+                    'file_path' => $relativePath,
+                    'file_ext'  => $ext,
+                    'file_size' => $f->getSize(),
                 ]);
             }
 
