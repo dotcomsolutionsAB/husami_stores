@@ -200,6 +200,15 @@ class QuotationController extends Controller
 
                 if (!$row) return $this->error('Quotation not found.', 404);
 
+                // ✅ file url (MUST define before returning)
+                $fileUrl = null;
+                if (!empty($row->file)) {
+                    $upload = DB::table('t_uploads')->where('id', $row->file)->first();
+                    if ($upload && !empty($upload->file_path)) {
+                        $fileUrl = Storage::disk('public')->url($upload->file_path);
+                    }
+                }
+
                 // products transform
                 $products = $row->products->map(function ($p) {
                     return [
