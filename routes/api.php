@@ -219,7 +219,7 @@ Route::middleware('auth:sanctum', 'role:admin,user')->group(function () {
     });
 
     // sales-invoice route
-    Route::prefix('sales-invoice')->group(function () {
+    Route::prefix('sales_invoice')->group(function () {
         Route::post('/create', [SalesInvoiceController::class, 'create']);
         Route::post('/retrieve/{id?}', [SalesInvoiceController::class, 'fetch']);
         Route::post('/update/{id}', [SalesInvoiceController::class, 'edit']);
