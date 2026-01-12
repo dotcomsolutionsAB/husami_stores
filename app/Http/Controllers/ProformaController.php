@@ -156,20 +156,60 @@ class ProformaController extends Controller
             // -------- SINGLE --------
             if ($id !== null) {
                 $row = ProformaModel::query()
+                    ->from('t_proforma as pf')
+                    ->leftJoin('t_clients as c', 'c.id', '=', 'pf.client')
+                    ->leftJoin('t_quotation as qtn', 'qtn.id', '=', 'pf.quotation')
                     ->select([
-                        'id','client','proforma_no','proforma_date','quotation','sales_order_no',
-                        'gross_total','packing_and_forwarding','freight_val','total_tax','round_off','grand_total',
-                        'prices','p_and_f','freight','delivery','payment','validity','remarks','file'
+                        'pf.id','pf.proforma_no','pf.proforma_date','pf.sales_order_no',
+                        'pf.gross_total','pf.packing_and_forwarding','pf.freight_val',
+                        'pf.total_tax','pf.round_off','pf.grand_total',
+                        'pf.prices','pf.p_and_f','pf.freight','pf.delivery','pf.payment','pf.validity','pf.remarks','pf.file',
+
+                        'c.id as client_id','c.name as client_name',
+                        'qtn.id as quotation_id','qtn.quotation as quotation_no',
                     ])
                     ->with(['products' => function ($p) {
                         $p->select(['id','proforma','sku','qty','unit','price','discount','hsn','tax']);
                     }])
-                    ->find($id);
+                    ->where('pf.id', $id)
+                    ->first();
 
                 if (!$row) return $this->error('Proforma not found.', 404);
 
                 return $this->success('Data fetched successfully', [
-                    'proforma' => $row,
+                    'proforma' => [
+                        'id' => (string)$row->id,
+                        'proforma_no' => (string)$row->proforma_no,
+                        'proforma_date' => $row->proforma_date,
+                        'sales_order_no' => $row->sales_order_no,
+
+                        // ✅ objects
+                        'client' => $row->client_id ? [
+                            'id'   => (string)$row->client_id,
+                            'name' => (string)$row->client_name,
+                        ] : null,
+
+                        'quotation' => $row->quotation_id ? [
+                            'id'        => (string)$row->quotation_id,
+                            'quotation' => (string)$row->quotation_no,
+                        ] : null,
+
+                        'gross_total' => (string)$row->gross_total,
+                        'packing_and_forwarding' => (string)$row->packing_and_forwarding,
+                        'freight_val' => (string)$row->freight_val,
+                        'total_tax' => (string)$row->total_tax,
+                        'round_off' => (string)$row->round_off,
+                        'grand_total' => (string)$row->grand_total,
+
+                        'prices' => $row->prices,
+                        'p_and_f' => $row->p_and_f,
+                        'freight' => $row->freight,
+                        'delivery' => $row->delivery,
+                        'payment' => $row->payment,
+                        'validity' => $row->validity,
+                        'remarks' => $row->remarks,
+                        'file' => $row->file ? (string)$row->file : null,
+                    ],
                     'products' => $row->products,
                 ], 200);
             }
@@ -186,18 +226,25 @@ class ProformaController extends Controller
             $q = ProformaModel::query()
                 ->from('t_proforma as pf')
                 ->leftJoin('t_clients as c', 'c.id', '=', 'pf.client')
+                ->leftJoin('t_quotation as qtn', 'qtn.id', '=', 'pf.quotation')
                 ->select([
                     'pf.id',
-                    'pf.client',
                     'pf.proforma_no',
                     'pf.proforma_date',
-                    'pf.quotation',
                     'pf.sales_order_no',
                     'pf.gross_total',
                     'pf.total_tax',
                     'pf.round_off',
                     'pf.grand_total',
                     'pf.file',
+
+                    // ✅ client object fields
+                    'c.id as client_id',
+                    'c.name as client_name',
+
+                    // ✅ quotation object fields
+                    'qtn.id as quotation_id',
+                    'qtn.quotation as quotation_no',
                 ])
                 ->orderBy('pf.id', 'desc');
 
@@ -231,7 +278,31 @@ class ProformaController extends Controller
             // if ($quotation !== '') $q->where('quotation', (int)$quotation);
 
             $total = (clone $q)->count();
-            $items = $q->skip($offset)->take($limit)->get();
+            $items = $items->map(function ($it) {
+                return [
+                    'id' => (string)$it->id,
+                    'proforma_no' => (string)$it->proforma_no,
+                    'proforma_date' => $it->proforma_date,
+                    'sales_order_no' => (string)($it->sales_order_no ?? ''),
+                    'gross_total' => (string)$it->gross_total,
+                    'total_tax' => (string)$it->total_tax,
+                    'round_off' => (string)$it->round_off,
+                    'grand_total' => (string)$it->grand_total,
+                    'file' => $it->file ? (string)$it->file : null,
+
+                    // ✅ client object
+                    'client' => $it->client_id ? [
+                        'id'   => (string)$it->client_id,
+                        'name' => (string)$it->client_name,
+                    ] : null,
+
+                    // ✅ quotation object
+                    'quotation' => $it->quotation_id ? [
+                        'id'        => (string)$it->quotation_id,
+                        'quotation' => (string)$it->quotation_no,
+                    ] : null,
+                ];
+            });
             $count = $items->count();
 
             return $this->success('Data fetched successfully', $items, 200, [
