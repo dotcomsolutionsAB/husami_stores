@@ -68,17 +68,17 @@ class SalesInvoiceController extends Controller
 
             $inv = DB::transaction(function () use ($v, $salesOrderId) {
 
-                // counter verify
-                $counter = CounterModel::where('name', 'sales_invoice')
-                    ->lockForUpdate()
-                    ->first();
+                // // counter verify
+                // $counter = CounterModel::where('name', 'sales_invoice')
+                //     ->lockForUpdate()
+                //     ->first();
 
-                if (!$counter) throw new \Exception("Counter 'sales_invoice' not found.");
+                // if (!$counter) throw new \Exception("Counter 'sales_invoice' not found.");
 
-                $expectedNo = $counter->formatted;
-                if (trim((string)$v['invoice_no']) !== $expectedNo) {
-                    throw new \Exception("Invalid invoice_no. Expected: {$expectedNo}");
-                }
+                // $expectedNo = $counter->formatted;
+                // if (trim((string)$v['invoice_no']) !== $expectedNo) {
+                //     throw new \Exception("Invalid invoice_no. Expected: {$expectedNo}");
+                // }
 
                 $inv = SalesInvoiceModel::create([
                     'client' => (int)$v['client'],
@@ -125,8 +125,8 @@ class SalesInvoiceController extends Controller
                 DB::table('t_sales_invoice_products')->insert($ins);
 
                 // increment counter after success
-                $counter->number = (int)$counter->number + 1;
-                $counter->save();
+                // $counter->number = (int)$counter->number + 1;
+                // $counter->save();
 
                 return $inv;
             });
