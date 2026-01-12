@@ -278,6 +278,11 @@ class ProformaController extends Controller
             // if ($quotation !== '') $q->where('quotation', (int)$quotation);
 
             $total = (clone $q)->count();
+
+            // ✅ Fetch rows
+            $items = $q->skip($offset)->take($limit)->get();
+
+            // ✅ Transform rows
             $items = $items->map(function ($it) {
                 return [
                     'id' => (string)$it->id,
