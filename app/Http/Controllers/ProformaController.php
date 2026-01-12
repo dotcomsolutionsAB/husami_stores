@@ -339,7 +339,7 @@ class ProformaController extends Controller
             $validator = Validator::make($request->all(), [
                 'client'       => ['sometimes','integer','exists:t_clients,id'],
                 'proforma_date'=> ['sometimes','nullable','date'],
-                'quotation'    => ['sometimes','integer','exists:t_quotation,id'],
+                'quotation'    => ['sometimes','string','exists:t_quotation,quotation'],
                 'sales_order_no'=>['sometimes','nullable','string','max:255'],
 
                 'gross_total' => ['sometimes','nullable','numeric'],
@@ -368,16 +368,32 @@ class ProformaController extends Controller
                 'products.*.tax' => ['nullable','numeric'],
             ]);
 
+            if (!$quotationId) {
+                throw new \Exception("Invalid quotation. Quotation not found: {$v['quotation']}");
+            }
+
             if ($validator->fails()) return $this->validation($validator);
             $v = $validator->validated();
 
-            DB::transaction(function () use ($proforma, $v) {
+            // ✅ quotation string -> quotation id (only if passed)
+            $quotationId = null;
+            if (!empty($v['quotation'])) {
+                $quotationId = DB::table('t_quotation')
+                    ->where('quotation', $v['quotation'])
+                    ->value('id');
+
+                if (!$quotationId) {
+                    throw new \Exception("Invalid quotation. Quotation not found: {$v['quotation']}");
+                }
+            }
+
+            DB::transaction(function () use ($proforma, $v, $quotationId) {
 
                 // update header
                 $proforma->fill([
                     'client'        => $v['client']        ?? $proforma->client,
                     'proforma_date' => array_key_exists('proforma_date',$v) ? $v['proforma_date'] : $proforma->proforma_date,
-                    'quotation'     => $v['quotation']     ?? $proforma->quotation,
+                    'quotation'     => $quotationId     ?? $proforma->quotation,
                     'sales_order_no'=> array_key_exists('sales_order_no',$v) ? $v['sales_order_no'] : $proforma->sales_order_no,
 
                     'gross_total' => array_key_exists('gross_total',$v) ? ($v['gross_total'] ?? 0) : $proforma->gross_total,
