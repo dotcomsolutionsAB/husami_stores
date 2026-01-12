@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\SalesOrderModel;
+use App\Models\SalesOrderProductModel;
+use App\Models\CounterModel;
 use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\DB;
