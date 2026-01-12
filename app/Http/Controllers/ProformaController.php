@@ -26,7 +26,7 @@ class ProformaController extends Controller
                 'client'       => ['required','integer','exists:t_clients,id'],
                 'proforma_no'  => ['required','string','max:255','unique:t_proforma,proforma_no'],
                 'proforma_date'=> ['nullable','date'],
-                'quotation'    => ['required','integer','exists:t_quotation,id'],
+                'quotation'    => ['required','string','exists:t_quotation,quotation'],
                 'sales_order_no'=>['nullable','string','max:255'],
 
                 'gross_total' => ['nullable','numeric'],
@@ -75,12 +75,20 @@ class ProformaController extends Controller
                     throw new \Exception("Invalid proforma_no. Expected: {$expectedNo}");
                 }
 
+                $quotationId = DB::table('t_quotation')
+                    ->where('quotation', $v['quotation'])
+                    ->value('id');
+
+                if (!$quotationId) {
+                    throw new \Exception("Invalid quotation. Quotation not found: {$v['quotation']}");
+                }
+
                 // ✅ create header (file stays null)
                 $proforma = ProformaModel::create([
                     'client'        => (int)$v['client'],
                     'proforma_no'   => $v['proforma_no'],
                     'proforma_date' => $v['proforma_date'] ?? null,
-                    'quotation'     => (int)$v['quotation'],
+                    'quotation'     => (int) $quotationId,
                     'sales_order_no'=> $v['sales_order_no'] ?? null,
 
                     'gross_total' => $v['gross_total'] ?? 0,
@@ -171,25 +179,56 @@ class ProformaController extends Controller
             $offset = max(0, (int) $request->input('offset', 0));
             $search = trim((string) $request->input('search', ''));
 
-            $client   = trim((string) $request->input('client', ''));
-            $quotation= trim((string) $request->input('quotation', ''));
+            // $client   = trim((string) $request->input('client', ''));
+            // $quotation= trim((string) $request->input('quotation', ''));
 
+            // Base query (parent only)
             $q = ProformaModel::query()
+                ->from('t_proforma as pf')
+                ->leftJoin('t_clients as c', 'c.id', '=', 'pf.client')
                 ->select([
-                    'id','client','proforma_no','proforma_date','quotation','sales_order_no',
-                    'gross_total','total_tax','round_off','grand_total','file'
+                    'pf.id',
+                    'pf.client',
+                    'pf.proforma_no',
+                    'pf.proforma_date',
+                    'pf.quotation',
+                    'pf.sales_order_no',
+                    'pf.gross_total',
+                    'pf.total_tax',
+                    'pf.round_off',
+                    'pf.grand_total',
+                    'pf.file',
                 ])
-                ->orderBy('id', 'desc');
+                ->orderBy('pf.id', 'desc');
 
+            // ✅ Enhanced search
             if ($search !== '') {
                 $q->where(function ($w) use ($search) {
-                    $w->where('proforma_no', 'like', "%{$search}%")
-                      ->orWhere('sales_order_no', 'like', "%{$search}%");
+
+                    // ✅ proforma fields
+                    $w->where('pf.proforma_no', 'like', "%{$search}%")
+                    ->orWhere('pf.sales_order_no', 'like', "%{$search}%")
+
+                    // ✅ client name
+                    ->orWhere('c.name', 'like', "%{$search}%")
+
+                    // ✅ product name only (NO sku)
+                    ->orWhereExists(function ($sub) use ($search) {
+                        $sub->select(DB::raw(1))
+                            ->from('t_proforma_products as pp')
+                            ->join('t_products as pr', 'pr.sku', '=', 'pp.sku')
+                            ->whereColumn('pp.proforma', 'pf.id')
+                            ->where('pr.item_name', 'like', "%{$search}%");
+                    });
                 });
             }
 
-            if ($client !== '') $q->where('client', (int)$client);
-            if ($quotation !== '') $q->where('quotation', (int)$quotation);
+            // filters remain same
+            // if ($client !== '') $q->where('pf.client', (int)$client);
+            // if ($quotation !== '') $q->where('pf.quotation', (int)$quotation);
+
+            // if ($client !== '') $q->where('client', (int)$client);
+            // if ($quotation !== '') $q->where('quotation', (int)$quotation);
 
             $total = (clone $q)->count();
             $items = $q->skip($offset)->take($limit)->get();
