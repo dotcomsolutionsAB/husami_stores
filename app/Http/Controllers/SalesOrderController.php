@@ -140,7 +140,13 @@ class SalesOrderController extends Controller
             });
 
             // return fresh (single style)
-            return $this->fetch(new Request(), $so->id);
+            // return $this->fetch(new Request(), $so->id);
+            $fresh = SalesOrderModel::with('products')->find($so->id);
+
+            return $this->success('Sales Order created successfully.', [
+                'sales_order' => $fresh,
+                'file_url'    => null,
+            ], 201);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Sales order create failed');
@@ -406,7 +412,13 @@ class SalesOrderController extends Controller
                 }
             });
 
-            return $this->fetch(new Request(), $so->id);
+            // return $this->fetch(new Request(), $so->id);
+            $fresh = SalesOrderModel::with('products')->find($so->id);
+
+            return $this->success('Sales Order updated successfully.', [
+                'sales_order' => $fresh,
+                'file_url'    => null,
+            ], 201);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Sales order update failed');
