@@ -368,10 +368,6 @@ class ProformaController extends Controller
                 'products.*.tax' => ['nullable','numeric'],
             ]);
 
-            if (!$quotationId) {
-                throw new \Exception("Invalid quotation. Quotation not found: {$v['quotation']}");
-            }
-
             if ($validator->fails()) return $this->validation($validator);
             $v = $validator->validated();
 
