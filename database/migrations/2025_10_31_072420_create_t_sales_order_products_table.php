@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('t_sales_order_products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('sales_order');
-            $table->unsignedBigInteger('product');
+            $table->string('sku');
             $table->unsignedInteger('qty')->default(0);
             $table->unsignedBigInteger('unit')->nullable();
             $table->decimal('price', 12, 2)->default(0);
