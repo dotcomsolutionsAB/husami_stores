@@ -131,7 +131,12 @@ class SalesInvoiceController extends Controller
                 return $inv;
             });
 
-            return $this->fetch(new Request(), $inv->id);
+            $fresh = SalesInvoiceModel::with('products')->find($inv->id);
+
+            return $this->success('Sales Invoice created successfully.', [
+                'sales_invoice' => $fresh,
+                'file_url'      => null,
+            ], 201);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Sales invoice create failed');
@@ -395,7 +400,12 @@ class SalesInvoiceController extends Controller
                 }
             });
 
-            return $this->fetch(new Request(), $inv->id);
+            $fresh = SalesInvoiceModel::with('products')->find($inv->id);
+
+            return $this->success('Sales Invoice updated successfully.', [
+                'sales_invoice' => $fresh,
+                'file_url'      => null,
+            ], 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Sales invoice update failed');
