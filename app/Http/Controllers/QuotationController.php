@@ -20,7 +20,7 @@ class QuotationController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'client' => 'required|integer|exists:t_clients,id',
-                'quotation' => 'required|string|max:255|unique:t_quotation,quotation',
+                // 'quotation' => 'required|string|max:255|unique:t_quotation,quotation',
                 'quotation_date' => 'nullable|date',
                 'enquiry' => 'nullable|string|max:255',
                 'enquiry_date' => 'nullable|date',
@@ -28,18 +28,28 @@ class QuotationController extends Controller
 
                 'gross_total' => 'nullable|numeric',
                 'packing_and_forwarding' => 'nullable|numeric',
-                'freight_val' => 'nullable|numeric',
+                'freight' => 'nullable|numeric',
                 'total_tax' => 'nullable|numeric',
                 'round_off' => 'nullable|numeric',
                 'grand_total' => 'nullable|numeric',
 
-                'prices' => 'nullable|string|max:255',
-                'p_and_f' => 'nullable|string|max:255',
-                'freight' => 'nullable|string|max:255',
-                'delivery' => 'nullable|string|max:255',
-                'payment' => 'nullable|string|max:255',
-                'validity' => 'nullable|string|max:255',
-                'remarks' => 'nullable|string',
+                // 'prices' => 'nullable|string|max:255',
+                // 'p_and_f' => 'nullable|string|max:255',
+                // 'freight' => 'nullable|string|max:255',
+                // 'delivery' => 'nullable|string|max:255',
+                // 'payment' => 'nullable|string|max:255',
+                // 'validity' => 'nullable|string|max:255',
+                // 'remarks' => 'nullable|string',
+
+                'terms' => 'nullable|array',
+
+                'terms.prices'   => 'nullable|string|max:255',
+                'terms.p_and_f'  => 'nullable|string|max:255',
+                'terms.freight'  => 'nullable|string|max:255',
+                'terms.delivery' => 'nullable|string|max:255',
+                'terms.payment'  => 'nullable|string|max:255',
+                'terms.validity' => 'nullable|string|max:255',
+                'terms.remarks'  => 'nullable|string',
 
                 // products
                 'products' => 'required|array|min:1',
@@ -70,7 +80,8 @@ class QuotationController extends Controller
 
                 $f = $request->file('file');
                 $ext = strtolower($f->getClientOriginalExtension() ?: 'pdf');
-                $fileName = 'quotation_' . $v['quotation'] . '_' . now()->format('Ymd_His') . '.' . $ext;
+                // $fileName = 'quotation_' . $v['quotation'] . '_' . now()->format('Ymd_His') . '.' . $ext;
+                $fileName = 'quotation_' . now()->format('Ymd_His') . '.' . $ext;
 
                 $relativePath = 'quotation/' . $fileName;
                 Storage::disk('public')->putFileAs('quotation', $f, $fileName);
@@ -100,14 +111,21 @@ class QuotationController extends Controller
                 }
 
                 $expectedQuotationNo = $counter->formatted;
-                if (trim((string)$v['quotation']) !== $expectedQuotationNo) {
-                    throw new \Exception("Invalid quotation number. Expected: {$expectedQuotationNo}");
+                // if (trim((string)$v['quotation']) !== $expectedQuotationNo) {
+                //     throw new \Exception("Invalid quotation number. Expected: {$expectedQuotationNo}");
+                // }
+
+                $exists = QuotationModel::where('quotation', $expectedQuotationNo)->exists();
+                if ($exists) {
+                    throw new \Exception("Quotation number already used: {$expectedQuotationNo}");
                 }
+
+                $terms = $v['terms'] ?? [];
 
                 // ✅ create quotation header
                 $q = QuotationModel::create([
                     'client' => (int)$v['client'],
-                    'quotation' => $v['quotation'],
+                    'quotation' => $expectedQuotationNo,
                     'quotation_date' => $v['quotation_date'] ?? null,
                     'enquiry' => $v['enquiry'] ?? null,
                     'enquiry_date' => $v['enquiry_date'] ?? null,
@@ -115,18 +133,26 @@ class QuotationController extends Controller
 
                     'gross_total' => $v['gross_total'] ?? 0,
                     'packing_and_forwarding' => $v['packing_and_forwarding'] ?? 0,
-                    'freight_val' => $v['freight_val'] ?? 0,
+                    'freight_val' => $v['freight'] ?? 0,
                     'total_tax' => $v['total_tax'] ?? 0,
                     'round_off' => $v['round_off'] ?? 0,
                     'grand_total' => $v['grand_total'] ?? 0,
 
-                    'prices' => $v['prices'] ?? null,
-                    'p_and_f' => $v['p_and_f'] ?? null,
-                    'freight' => $v['freight'] ?? null,
-                    'delivery' => $v['delivery'] ?? null,
-                    'payment' => $v['payment'] ?? null,
-                    'validity' => $v['validity'] ?? null,
-                    'remarks' => $v['remarks'] ?? null,
+                    // 'prices' => $v['prices'] ?? null,
+                    // 'p_and_f' => $v['p_and_f'] ?? null,
+                    // 'freight' => $v['freight'] ?? null,
+                    // 'delivery' => $v['delivery'] ?? null,
+                    // 'payment' => $v['payment'] ?? null,
+                    // 'validity' => $v['validity'] ?? null,
+                    // 'remarks' => $v['remarks'] ?? null,
+
+                    'prices'   => $terms['prices'] ?? null,
+                    'p_and_f'  => $terms['p_and_f'] ?? null,
+                    'freight'  => $terms['freight'] ?? null,   // NOTE: this is the TEXT freight term, not numeric freight
+                    'delivery' => $terms['delivery'] ?? null,
+                    'payment'  => $terms['payment'] ?? null,
+                    'validity' => $terms['validity'] ?? null,
+                    'remarks'  => $terms['remarks'] ?? null,
 
                     'file' => $uploadId,
                 ]);
