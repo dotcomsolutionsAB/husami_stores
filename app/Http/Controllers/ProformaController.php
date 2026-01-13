@@ -420,7 +420,7 @@ class ProformaController extends Controller
                 }
             }
 
-            DB::transaction(function () use ($proforma, $v, $quotationId) {
+            DB::transaction(function () use ($proforma, $v, $quotationId, $terms) {
 
                 // update header
                 $proforma->fill([

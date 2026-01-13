@@ -400,7 +400,7 @@ class SalesOrderController extends Controller
                 if (!$quotationId) throw new \Exception("Invalid quotation not found: {$v['quotation']}");
             }
 
-            DB::transaction(function () use ($so, $v, $quotationId) {
+            DB::transaction(function () use ($so, $v, $quotationId, $terms) {
                 $so->fill([
                     'client' => $v['client'] ?? $so->client,
                     'sales_order_date' => array_key_exists('sales_order_date',$v) ? $v['sales_order_date'] : $so->sales_order_date,

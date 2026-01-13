@@ -384,7 +384,7 @@ class SalesInvoiceController extends Controller
                 }
             }
 
-            DB::transaction(function () use ($inv, $v, $salesOrderId) {
+            DB::transaction(function () use ($inv, $v, $salesOrderId, $terms) {
 
                 $inv->fill([
                     'client' => $v['client'] ?? $inv->client,
