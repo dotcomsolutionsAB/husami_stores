@@ -462,7 +462,7 @@ class SalesOrderController extends Controller
             return $this->success('Sales Order updated successfully.', [
                 'sales_order' => $fresh,
                 'file_url'    => null,
-            ], 201);
+            ], 200);
 
         } catch (\Throwable $e) {
             return $this->serverError($e, 'Sales order update failed');
