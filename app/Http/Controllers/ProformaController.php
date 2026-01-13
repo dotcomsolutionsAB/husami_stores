@@ -24,7 +24,7 @@ class ProformaController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'client'       => ['required','integer','exists:t_clients,id'],
-                'proforma_no'  => ['required','string','max:255','unique:t_proforma,proforma_no'],
+                // 'proforma_no'  => ['required','string','max:255','unique:t_proforma,proforma_no'],
                 'proforma_date'=> ['nullable','date'],
                 'quotation'    => ['required','string','exists:t_quotation,quotation'],
                 'sales_order_no'=>['nullable','string','max:255'],
@@ -36,13 +36,23 @@ class ProformaController extends Controller
                 'round_off'   => ['nullable','numeric'],
                 'grand_total' => ['nullable','numeric'],
 
-                'prices'   => ['nullable','string','max:255'],
-                'p_and_f'  => ['nullable','string','max:255'],
-                'freight'  => ['nullable','string','max:255'],
-                'delivery' => ['nullable','string','max:255'],
-                'payment'  => ['nullable','string','max:255'],
-                'validity' => ['nullable','string','max:255'],
-                'remarks'  => ['nullable','string'],
+                // 'prices'   => ['nullable','string','max:255'],
+                // 'p_and_f'  => ['nullable','string','max:255'],
+                // 'freight'  => ['nullable','string','max:255'],
+                // 'delivery' => ['nullable','string','max:255'],
+                // 'payment'  => ['nullable','string','max:255'],
+                // 'validity' => ['nullable','string','max:255'],
+                // 'remarks'  => ['nullable','string'],
+
+                'terms' => 'nullable|array',
+
+                'terms.prices'   => 'nullable|string|max:255',
+                'terms.p_and_f'  => 'nullable|string|max:255',
+                'terms.freight'  => 'nullable|string|max:255',
+                'terms.delivery' => 'nullable|string|max:255',
+                'terms.payment'  => 'nullable|string|max:255',
+                'terms.validity' => 'nullable|string|max:255',
+                'terms.remarks'  => 'nullable|string',
 
                 // products
                 'products' => ['required','array','min:1'],
@@ -71,8 +81,13 @@ class ProformaController extends Controller
                 }
 
                 $expectedNo = $counter->formatted;
-                if (trim((string)$v['proforma_no']) !== $expectedNo) {
-                    throw new \Exception("Invalid proforma_no. Expected: {$expectedNo}");
+                // if (trim((string)$v['proforma_no']) !== $expectedNo) {
+                //     throw new \Exception("Invalid proforma_no. Expected: {$expectedNo}");
+                // }
+                
+                $exists = ProformaModel::where('proforma_no', $expectedNo)->exists();
+                if ($exists) {
+                    throw new \Exception("Proforma number already used: {$expectedNo}");
                 }
 
                 $quotationId = DB::table('t_quotation')
@@ -83,10 +98,12 @@ class ProformaController extends Controller
                     throw new \Exception("Invalid quotation. Quotation not found: {$v['quotation']}");
                 }
 
+                $terms = $v['terms'] ?? [];
+
                 // ✅ create header (file stays null)
                 $proforma = ProformaModel::create([
                     'client'        => (int)$v['client'],
-                    'proforma_no'   => $v['proforma_no'],
+                    'proforma_no'   => $expectedNo,
                     'proforma_date' => $v['proforma_date'] ?? null,
                     'quotation'     => (int) $quotationId,
                     'sales_order_no'=> $v['sales_order_no'] ?? null,
@@ -98,13 +115,20 @@ class ProformaController extends Controller
                     'round_off'   => $v['round_off'] ?? 0,
                     'grand_total' => $v['grand_total'] ?? 0,
 
-                    'prices'   => $v['prices'] ?? null,
-                    'p_and_f'  => $v['p_and_f'] ?? null,
-                    'freight'  => $v['freight'] ?? null,
-                    'delivery' => $v['delivery'] ?? null,
-                    'payment'  => $v['payment'] ?? null,
-                    'validity' => $v['validity'] ?? null,
-                    'remarks'  => $v['remarks'] ?? null,
+                    // 'prices'   => $v['prices'] ?? null,
+                    // 'p_and_f'  => $v['p_and_f'] ?? null,
+                    // 'freight'  => $v['freight'] ?? null,
+                    // 'delivery' => $v['delivery'] ?? null,
+                    // 'payment'  => $v['payment'] ?? null,
+                    // 'validity' => $v['validity'] ?? null,
+                    // 'remarks'  => $v['remarks'] ?? null,
+                    'prices'   => $terms['prices'] ?? null,
+                    'p_and_f'  => $terms['p_and_f'] ?? null,
+                    'freight'  => $terms['freight'] ?? null,   // NOTE: this is the TEXT freight term, not numeric freight
+                    'delivery' => $terms['delivery'] ?? null,
+                    'payment'  => $terms['payment'] ?? null,
+                    'validity' => $terms['validity'] ?? null,
+                    'remarks'  => $terms['remarks'] ?? null,
 
                     'file' => null,
                 ]);
@@ -349,13 +373,24 @@ class ProformaController extends Controller
                 'round_off'   => ['sometimes','nullable','numeric'],
                 'grand_total' => ['sometimes','nullable','numeric'],
 
-                'prices'   => ['sometimes','nullable','string','max:255'],
-                'p_and_f'  => ['sometimes','nullable','string','max:255'],
-                'freight'  => ['sometimes','nullable','string','max:255'],
-                'delivery' => ['sometimes','nullable','string','max:255'],
-                'payment'  => ['sometimes','nullable','string','max:255'],
-                'validity' => ['sometimes','nullable','string','max:255'],
-                'remarks'  => ['sometimes','nullable','string'],
+                // 'prices'   => ['sometimes','nullable','string','max:255'],
+                // 'p_and_f'  => ['sometimes','nullable','string','max:255'],
+                // 'freight'  => ['sometimes','nullable','string','max:255'],
+                // 'delivery' => ['sometimes','nullable','string','max:255'],
+                // 'payment'  => ['sometimes','nullable','string','max:255'],
+                // 'validity' => ['sometimes','nullable','string','max:255'],
+                // 'remarks'  => ['sometimes','nullable','string'],
+
+                'terms' => ['sometimes','nullable','array'],
+
+                'terms.prices'   => 'nullable|string|max:255',
+                'terms.p_and_f'  => 'nullable|string|max:255',
+                'terms.freight'  => 'nullable|string|max:255',
+                'terms.delivery' => 'nullable|string|max:255',
+                'terms.payment'  => 'nullable|string|max:255',
+                'terms.validity' => 'nullable|string|max:255',
+                'terms.remarks'  => 'nullable|string',
+
 
                 // products optional
                 'products' => ['sometimes','array','min:1'],
@@ -370,6 +405,8 @@ class ProformaController extends Controller
 
             if ($validator->fails()) return $this->validation($validator);
             $v = $validator->validated();
+
+            $terms = $v['terms'] ?? null;  // null if not sent
 
             // ✅ quotation string -> quotation id (only if passed)
             $quotationId = null;
@@ -399,13 +436,21 @@ class ProformaController extends Controller
                     'round_off'   => array_key_exists('round_off',$v) ? ($v['round_off'] ?? 0) : $proforma->round_off,
                     'grand_total' => array_key_exists('grand_total',$v) ? ($v['grand_total'] ?? 0) : $proforma->grand_total,
 
-                    'prices'   => array_key_exists('prices',$v) ? $v['prices'] : $proforma->prices,
-                    'p_and_f'  => array_key_exists('p_and_f',$v) ? $v['p_and_f'] : $proforma->p_and_f,
-                    'freight'  => array_key_exists('freight',$v) ? $v['freight'] : $proforma->freight,
-                    'delivery' => array_key_exists('delivery',$v) ? $v['delivery'] : $proforma->delivery,
-                    'payment'  => array_key_exists('payment',$v) ? $v['payment'] : $proforma->payment,
-                    'validity' => array_key_exists('validity',$v) ? $v['validity'] : $proforma->validity,
-                    'remarks'  => array_key_exists('remarks',$v) ? $v['remarks'] : $proforma->remarks,
+                    // 'prices'   => array_key_exists('prices',$v) ? $v['prices'] : $proforma->prices,
+                    // 'p_and_f'  => array_key_exists('p_and_f',$v) ? $v['p_and_f'] : $proforma->p_and_f,
+                    // 'freight'  => array_key_exists('freight',$v) ? $v['freight'] : $proforma->freight,
+                    // 'delivery' => array_key_exists('delivery',$v) ? $v['delivery'] : $proforma->delivery,
+                    // 'payment'  => array_key_exists('payment',$v) ? $v['payment'] : $proforma->payment,
+                    // 'validity' => array_key_exists('validity',$v) ? $v['validity'] : $proforma->validity,
+                    // 'remarks'  => array_key_exists('remarks',$v) ? $v['remarks'] : $proforma->remarks,
+
+                    'prices'   => (is_array($terms) && array_key_exists('prices', $terms))   ? $terms['prices']   : $proforma->prices,
+                    'p_and_f'  => (is_array($terms) && array_key_exists('p_and_f', $terms))  ? $terms['p_and_f']  : $proforma->p_and_f,
+                    'freight'  => (is_array($terms) && array_key_exists('freight', $terms))  ? $terms['freight']  : $proforma->freight,
+                    'delivery' => (is_array($terms) && array_key_exists('delivery', $terms)) ? $terms['delivery'] : $proforma->delivery,
+                    'payment'  => (is_array($terms) && array_key_exists('payment', $terms))  ? $terms['payment']  : $proforma->payment,
+                    'validity' => (is_array($terms) && array_key_exists('validity', $terms)) ? $terms['validity'] : $proforma->validity,
+                    'remarks'  => (is_array($terms) && array_key_exists('remarks', $terms))  ? $terms['remarks']  : $proforma->remarks,
                 ]);
 
                 $proforma->save();

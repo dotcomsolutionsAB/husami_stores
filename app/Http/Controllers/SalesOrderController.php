@@ -22,7 +22,7 @@ class SalesOrderController extends Controller
                 'client' => ['required','integer','exists:t_clients,id'],
 
                 // counter formatted value will be passed from UI
-                'sales_order_no' => ['required','string','max:255','unique:t_sales_order,sales_order_no'],
+                // 'sales_order_no' => ['required','string','max:255','unique:t_sales_order,sales_order_no'],
 
                 'sales_order_date' => ['nullable','date'],
 
@@ -33,18 +33,27 @@ class SalesOrderController extends Controller
 
                 'gross_total' => ['nullable','numeric'],
                 'packing_and_forwarding' => ['nullable','numeric'],
-                'freight_val' => ['nullable','numeric'],
+                'freight' => ['nullable','numeric'],
                 'total_tax' => ['nullable','numeric'],
                 'round_off' => ['nullable','numeric'],
                 'grand_total' => ['nullable','numeric'],
 
-                'prices' => ['nullable','string','max:255'],
-                'p_and_f' => ['nullable','string','max:255'],
-                'freight' => ['nullable','string','max:255'],
-                'delivery' => ['nullable','string','max:255'],
-                'payment' => ['nullable','string','max:255'],
-                'validity' => ['nullable','string','max:255'],
-                'remarks' => ['nullable','string'],
+                // 'prices' => ['nullable','string','max:255'],
+                // 'p_and_f' => ['nullable','string','max:255'],
+                // 'freight' => ['nullable','string','max:255'],
+                // 'delivery' => ['nullable','string','max:255'],
+                // 'payment' => ['nullable','string','max:255'],
+                // 'validity' => ['nullable','string','max:255'],
+                // 'remarks' => ['nullable','string'],
+                'terms' => 'nullable|array',
+
+                'terms.prices'   => 'nullable|string|max:255',
+                'terms.p_and_f'  => 'nullable|string|max:255',
+                'terms.freight'  => 'nullable|string|max:255',
+                'terms.delivery' => 'nullable|string|max:255',
+                'terms.payment'  => 'nullable|string|max:255',
+                'terms.validity' => 'nullable|string|max:255',
+                'terms.remarks'  => 'nullable|string',
 
                 // products
                 'products' => ['required','array','min:1'],
@@ -84,32 +93,46 @@ class SalesOrderController extends Controller
                 }
 
                 $expectedNo = $counter->formatted;
-                if (trim((string)$v['sales_order_no']) !== $expectedNo) {
-                    throw new \Exception("Invalid sales_order_no. Expected: {$expectedNo}");
+                // if (trim((string)$v['sales_order_no']) !== $expectedNo) {
+                //     throw new \Exception("Invalid sales_order_no. Expected: {$expectedNo}");
+                // }
+                $exists = SalesOrderModel::where('sales_order_no', $expectedNo)->exists();
+                if ($exists) {
+                    throw new \Exception("Sales order number already used: {$expectedNo}");
                 }
+
+                $terms = $v['terms'] ?? [];
 
                 // ✅ create header
                 $so = SalesOrderModel::create([
                     'client' => (int)$v['client'],
-                    'sales_order_no' => $v['sales_order_no'],
+                    'sales_order_no' => $expectedNo,
                     'sales_order_date' => $v['sales_order_date'] ?? null,
                     'quotation' => (int)$quotationId,
                     'client_order_no' => $v['client_order_no'] ?? null,
 
                     'gross_total' => $v['gross_total'] ?? 0,
                     'packing_and_forwarding' => $v['packing_and_forwarding'] ?? 0,
-                    'freight_val' => $v['freight_val'] ?? 0,
+                    'freight_val' => $v['freight'] ?? 0,
                     'total_tax' => $v['total_tax'] ?? 0,
                     'round_off' => $v['round_off'] ?? 0,
                     'grand_total' => $v['grand_total'] ?? 0,
 
-                    'prices' => $v['prices'] ?? null,
-                    'p_and_f' => $v['p_and_f'] ?? null,
-                    'freight' => $v['freight'] ?? null,
-                    'delivery' => $v['delivery'] ?? null,
-                    'payment' => $v['payment'] ?? null,
-                    'validity' => $v['validity'] ?? null,
-                    'remarks' => $v['remarks'] ?? null,
+                    // 'prices' => $v['prices'] ?? null,
+                    // 'p_and_f' => $v['p_and_f'] ?? null,
+                    // 'freight' => $v['freight'] ?? null,
+                    // 'delivery' => $v['delivery'] ?? null,
+                    // 'payment' => $v['payment'] ?? null,
+                    // 'validity' => $v['validity'] ?? null,
+                    // 'remarks' => $v['remarks'] ?? null,
+
+                    'prices'   => $terms['prices'] ?? null,
+                    'p_and_f'  => $terms['p_and_f'] ?? null,
+                    'freight'  => $terms['freight'] ?? null,   // NOTE: this is the TEXT freight term, not numeric freight
+                    'delivery' => $terms['delivery'] ?? null,
+                    'payment'  => $terms['payment'] ?? null,
+                    'validity' => $terms['validity'] ?? null,
+                    'remarks'  => $terms['remarks'] ?? null,
 
                     'file' => null,
                 ]);
@@ -338,13 +361,23 @@ class SalesOrderController extends Controller
                 'round_off' => ['sometimes','nullable','numeric'],
                 'grand_total' => ['sometimes','nullable','numeric'],
 
-                'prices' => ['sometimes','nullable','string','max:255'],
-                'p_and_f' => ['sometimes','nullable','string','max:255'],
-                'freight' => ['sometimes','nullable','string','max:255'],
-                'delivery' => ['sometimes','nullable','string','max:255'],
-                'payment' => ['sometimes','nullable','string','max:255'],
-                'validity' => ['sometimes','nullable','string','max:255'],
-                'remarks' => ['sometimes','nullable','string'],
+                // 'prices' => ['sometimes','nullable','string','max:255'],
+                // 'p_and_f' => ['sometimes','nullable','string','max:255'],
+                // 'freight' => ['sometimes','nullable','string','max:255'],
+                // 'delivery' => ['sometimes','nullable','string','max:255'],
+                // 'payment' => ['sometimes','nullable','string','max:255'],
+                // 'validity' => ['sometimes','nullable','string','max:255'],
+                // 'remarks' => ['sometimes','nullable','string'],
+
+                'terms' => ['sometimes','nullable','array'],
+
+                'terms.prices'   => 'nullable|string|max:255',
+                'terms.p_and_f'  => 'nullable|string|max:255',
+                'terms.freight'  => 'nullable|string|max:255',
+                'terms.delivery' => 'nullable|string|max:255',
+                'terms.payment'  => 'nullable|string|max:255',
+                'terms.validity' => 'nullable|string|max:255',
+                'terms.remarks'  => 'nullable|string',
 
                 'products' => ['sometimes','array','min:1'],
                 'products.*.sku' => ['required_with:products','string','exists:t_products,sku'],
@@ -358,6 +391,8 @@ class SalesOrderController extends Controller
 
             if ($validator->fails()) return $this->validation($validator);
             $v = $validator->validated();
+
+            $terms = $v['terms'] ?? null;  // null if not sent
 
             $quotationId = null;
             if (!empty($v['quotation'])) {
@@ -379,13 +414,22 @@ class SalesOrderController extends Controller
                     'round_off' => array_key_exists('round_off',$v) ? ($v['round_off'] ?? 0) : $so->round_off,
                     'grand_total' => array_key_exists('grand_total',$v) ? ($v['grand_total'] ?? 0) : $so->grand_total,
 
-                    'prices' => array_key_exists('prices',$v) ? $v['prices'] : $so->prices,
-                    'p_and_f' => array_key_exists('p_and_f',$v) ? $v['p_and_f'] : $so->p_and_f,
-                    'freight' => array_key_exists('freight',$v) ? $v['freight'] : $so->freight,
-                    'delivery' => array_key_exists('delivery',$v) ? $v['delivery'] : $so->delivery,
-                    'payment' => array_key_exists('payment',$v) ? $v['payment'] : $so->payment,
-                    'validity' => array_key_exists('validity',$v) ? $v['validity'] : $so->validity,
-                    'remarks' => array_key_exists('remarks',$v) ? $v['remarks'] : $so->remarks,
+                    // 'prices' => array_key_exists('prices',$v) ? $v['prices'] : $so->prices,
+                    // 'p_and_f' => array_key_exists('p_and_f',$v) ? $v['p_and_f'] : $so->p_and_f,
+                    // 'freight' => array_key_exists('freight',$v) ? $v['freight'] : $so->freight,
+                    // 'delivery' => array_key_exists('delivery',$v) ? $v['delivery'] : $so->delivery,
+                    // 'payment' => array_key_exists('payment',$v) ? $v['payment'] : $so->payment,
+                    // 'validity' => array_key_exists('validity',$v) ? $v['validity'] : $so->validity,
+                    // 'remarks' => array_key_exists('remarks',$v) ? $v['remarks'] : $so->remarks,
+
+                    
+                    'prices'   => (is_array($terms) && array_key_exists('prices', $terms))   ? $terms['prices']   : $so->prices,
+                    'p_and_f'  => (is_array($terms) && array_key_exists('p_and_f', $terms))  ? $terms['p_and_f']  : $so->p_and_f,
+                    'freight'  => (is_array($terms) && array_key_exists('freight', $terms))  ? $terms['freight']  : $so->freight,
+                    'delivery' => (is_array($terms) && array_key_exists('delivery', $terms)) ? $terms['delivery'] : $so->delivery,
+                    'payment'  => (is_array($terms) && array_key_exists('payment', $terms))  ? $terms['payment']  : $so->payment,
+                    'validity' => (is_array($terms) && array_key_exists('validity', $terms)) ? $terms['validity'] : $so->validity,
+                    'remarks'  => (is_array($terms) && array_key_exists('remarks', $terms))  ? $terms['remarks']  : $so->remarks,
                 ]);
 
                 $so->save();
