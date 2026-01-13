@@ -355,7 +355,7 @@ class QuotationController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'client' => 'required|integer|exists:t_clients,id',
-                'quotation' => 'required|string|max:255|unique:t_quotation,quotation,' . $id,
+                // 'quotation' => 'required|string|max:255|unique:t_quotation,quotation,' . $id,
                 'quotation_date' => 'nullable|date',
                 'enquiry' => 'nullable|string|max:255',
                 'enquiry_date' => 'nullable|date',
@@ -363,18 +363,28 @@ class QuotationController extends Controller
 
                 'gross_total' => 'nullable|numeric',
                 'packing_and_forwarding' => 'nullable|numeric',
-                'freight_val' => 'nullable|numeric',
+                'freight' => 'nullable|numeric',
                 'total_tax' => 'nullable|numeric',
                 'round_off' => 'nullable|numeric',
                 'grand_total' => 'nullable|numeric',
 
-                'prices' => 'nullable|string|max:255',
-                'p_and_f' => 'nullable|string|max:255',
-                'freight' => 'nullable|string|max:255',
-                'delivery' => 'nullable|string|max:255',
-                'payment' => 'nullable|string|max:255',
-                'validity' => 'nullable|string|max:255',
-                'remarks' => 'nullable|string',
+                // 'prices' => 'nullable|string|max:255',
+                // 'p_and_f' => 'nullable|string|max:255',
+                // 'freight' => 'nullable|string|max:255',
+                // 'delivery' => 'nullable|string|max:255',
+                // 'payment' => 'nullable|string|max:255',
+                // 'validity' => 'nullable|string|max:255',
+                // 'remarks' => 'nullable|string',
+
+                'terms' => 'nullable|array',
+
+                'terms.prices'   => 'nullable|string|max:255',
+                'terms.p_and_f'  => 'nullable|string|max:255',
+                'terms.freight'  => 'nullable|string|max:255',
+                'terms.delivery' => 'nullable|string|max:255',
+                'terms.payment'  => 'nullable|string|max:255',
+                'terms.validity' => 'nullable|string|max:255',
+                'terms.remarks'  => 'nullable|string',
 
                 'products' => 'required|array|min:1',
                 'products.*.sku' => 'required|integer|exists:t_products,sku',         // as per schema unsignedBigInteger
@@ -416,6 +426,8 @@ class QuotationController extends Controller
                 ]);
             }
 
+            $terms = $request->input('terms', []);
+
             // ---------- UPDATE HEADER ----------
             $row->update([
                 'client' => (int)$request->client,
@@ -427,18 +439,26 @@ class QuotationController extends Controller
 
                 'gross_total' => $request->gross_total ?? 0,
                 'packing_and_forwarding' => $request->packing_and_forwarding ?? 0,
-                'freight_val' => $request->freight_val ?? 0,
+                'freight_val' => $request->freight ?? 0,
                 'total_tax' => $request->total_tax ?? 0,
                 'round_off' => $request->round_off ?? 0,
                 'grand_total' => $request->grand_total ?? 0,
 
-                'prices' => $request->prices,
-                'p_and_f' => $request->p_and_f,
-                'freight' => $request->freight,
-                'delivery' => $request->delivery,
-                'payment' => $request->payment,
-                'validity' => $request->validity,
-                'remarks' => $request->remarks,
+                // 'prices' => $request->prices,
+                // 'p_and_f' => $request->p_and_f,
+                // 'freight' => $request->freight,
+                // 'delivery' => $request->delivery,
+                // 'payment' => $request->payment,
+                // 'validity' => $request->validity,
+                // 'remarks' => $request->remarks,
+
+                'prices'   => $terms['prices']   ?? null,
+                'p_and_f'  => $terms['p_and_f']  ?? null,
+                'freight'  => $terms['freight']  ?? null,
+                'delivery' => $terms['delivery'] ?? null,
+                'payment'  => $terms['payment']  ?? null,
+                'validity' => $terms['validity'] ?? null,
+                'remarks'  => $terms['remarks']  ?? null,
 
                 'file' => $uploadId,
             ]);
