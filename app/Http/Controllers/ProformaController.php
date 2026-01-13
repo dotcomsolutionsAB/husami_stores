@@ -31,7 +31,7 @@ class ProformaController extends Controller
 
                 'gross_total' => ['nullable','numeric'],
                 'packing_and_forwarding' => ['nullable','numeric'],
-                'freight_val' => ['nullable','numeric'],
+                'freight' => ['nullable','numeric'],
                 'total_tax'   => ['nullable','numeric'],
                 'round_off'   => ['nullable','numeric'],
                 'grand_total' => ['nullable','numeric'],
@@ -110,7 +110,7 @@ class ProformaController extends Controller
 
                     'gross_total' => $v['gross_total'] ?? 0,
                     'packing_and_forwarding' => $v['packing_and_forwarding'] ?? 0,
-                    'freight_val' => $v['freight_val'] ?? 0,
+                    'freight_val' => $v['freight'] ?? 0,
                     'total_tax'   => $v['total_tax'] ?? 0,
                     'round_off'   => $v['round_off'] ?? 0,
                     'grand_total' => $v['grand_total'] ?? 0,
@@ -220,7 +220,7 @@ class ProformaController extends Controller
 
                         'gross_total' => (string)$row->gross_total,
                         'packing_and_forwarding' => (string)$row->packing_and_forwarding,
-                        'freight_val' => (string)$row->freight_val,
+                        'freight' => (string)$row->freight_val,
                         'total_tax' => (string)$row->total_tax,
                         'round_off' => (string)$row->round_off,
                         'grand_total' => (string)$row->grand_total,
@@ -368,7 +368,7 @@ class ProformaController extends Controller
 
                 'gross_total' => ['sometimes','nullable','numeric'],
                 'packing_and_forwarding' => ['sometimes','nullable','numeric'],
-                'freight_val' => ['sometimes','nullable','numeric'],
+                'freight' => ['sometimes','nullable','numeric'],
                 'total_tax'   => ['sometimes','nullable','numeric'],
                 'round_off'   => ['sometimes','nullable','numeric'],
                 'grand_total' => ['sometimes','nullable','numeric'],
@@ -431,7 +431,7 @@ class ProformaController extends Controller
 
                     'gross_total' => array_key_exists('gross_total',$v) ? ($v['gross_total'] ?? 0) : $proforma->gross_total,
                     'packing_and_forwarding' => array_key_exists('packing_and_forwarding',$v) ? ($v['packing_and_forwarding'] ?? 0) : $proforma->packing_and_forwarding,
-                    'freight_val' => array_key_exists('freight_val',$v) ? ($v['freight_val'] ?? 0) : $proforma->freight_val,
+                    'freight_val' => array_key_exists('freight',$v) ? ($v['freight'] ?? 0) : $proforma->freight_val,
                     'total_tax'   => array_key_exists('total_tax',$v) ? ($v['total_tax'] ?? 0) : $proforma->total_tax,
                     'round_off'   => array_key_exists('round_off',$v) ? ($v['round_off'] ?? 0) : $proforma->round_off,
                     'grand_total' => array_key_exists('grand_total',$v) ? ($v['grand_total'] ?? 0) : $proforma->grand_total,

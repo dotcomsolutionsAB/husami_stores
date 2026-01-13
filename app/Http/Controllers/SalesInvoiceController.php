@@ -228,7 +228,7 @@ class SalesInvoiceController extends Controller
 
                         'gross_total' => (string)$row->gross_total,
                         'packing_and_forwarding' => (string)$row->packing_and_forwarding,
-                        'freight_val' => (string)$row->freight_val,
+                        'freight' => (string)$row->freight_val,
                         'total_tax' => (string)$row->total_tax,
                         'round_off' => (string)$row->round_off,
                         'grand_total' => (string)$row->grand_total,
@@ -335,7 +335,7 @@ class SalesInvoiceController extends Controller
 
                 'gross_total' => ['sometimes','nullable','numeric'],
                 'packing_and_forwarding' => ['sometimes','nullable','numeric'],
-                'freight_val' => ['sometimes','nullable','numeric'],
+                'freight' => ['sometimes','nullable','numeric'],
                 'total_tax' => ['sometimes','nullable','numeric'],
                 'round_off' => ['sometimes','nullable','numeric'],
                 'grand_total' => ['sometimes','nullable','numeric'],
@@ -394,7 +394,7 @@ class SalesInvoiceController extends Controller
 
                     'gross_total' => array_key_exists('gross_total',$v) ? ($v['gross_total'] ?? 0) : $inv->gross_total,
                     'packing_and_forwarding' => array_key_exists('packing_and_forwarding',$v) ? ($v['packing_and_forwarding'] ?? 0) : $inv->packing_and_forwarding,
-                    'freight_val' => array_key_exists('freight_val',$v) ? ($v['freight_val'] ?? 0) : $inv->freight_val,
+                    'freight_val' => array_key_exists('freight',$v) ? ($v['freight'] ?? 0) : $inv->freight_val,
                     'total_tax' => array_key_exists('total_tax',$v) ? ($v['total_tax'] ?? 0) : $inv->total_tax,
                     'round_off' => array_key_exists('round_off',$v) ? ($v['round_off'] ?? 0) : $inv->round_off,
                     'grand_total' => array_key_exists('grand_total',$v) ? ($v['grand_total'] ?? 0) : $inv->grand_total,
